@@ -68,7 +68,7 @@ const LoginScreen = () => {
               className="btn flex-fill d-flex flex-column align-items-center justify-content-center p-3 rounded-4 border-0 text-white transition"
               style={{
                 backgroundColor: role.bgColor,
-                border: activeRole === role.id ? '3px solid black' : '3px solid transparent',
+                border: activeRole === role.id ? '10px solid black' : '3px solid black',
                 height: activeRole === role.id ? '115px' : '110px',
                 width: activeRole === role.id ? '115px' : '110px',
               }}
