@@ -26,7 +26,7 @@ const LoginScreen = () => {
     console.log('Zalogowano jako:', activeRole, email);
 
     // Przekierowanie użytkownika na podaną ścieżkę (np. /panel lub /dashboard)
-    navigate('/panel');
+    navigate('/dashboard');
   };
 
   // const handleReset = (e) => {
