@@ -1,0 +1,475 @@
+/*
+ * Dashboard.css
+ * Wszystkie zmiany kolorów (tryb nocny) i responsywność (media queries)
+ * dla komponentu Dashboard. Wcześniej znajdowało się to w tagu <style>
+ * wewnątrz Dashboard.jsx — teraz jest to osobny, statyczny plik CSS.
+ *
+ * JSX steruje tym tylko przez przełączanie klas (np. "dark-mode" na
+ * elemencie .dashboard-root, "active" na .class-card) — same wartości
+ * kolorów i reguły @media są już wyłącznie tutaj.
+ */
+
+/* Responsywność tylko dla mniejszych ekranów. Desktop >= 992 px pozostaje bez zmian. */
+@media (max-width: 991.98px) {
+  .dashboard-root {
+    height: auto !important;
+    min-height: 100vh;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  .dashboard-root > nav {
+    height: auto !important;
+    min-height: 64px;
+  }
+
+  .dashboard-root > nav > .container-fluid {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dashboard-root > .container-fluid {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    flex: 0 0 auto !important;
+  }
+
+  .dashboard-root > .container-fluid > .row {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card > div:first-child {
+    padding-bottom: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card > div:first-child > div[style*='calc(100vh - 420px)'] {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: 280px !important;
+    overflow-y: auto !important;
+    flex: 0 1 auto !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card > div:last-child {
+    position: static !important;
+    padding-top: 14px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 {
+    overflow: visible !important;
+    min-height: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child {
+    flex-shrink: 1 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child > div:last-child {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) {
+    height: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row {
+    height: auto !important;
+    margin-bottom: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card {
+    height: auto !important;
+    min-height: 380px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:last-child {
+    height: auto !important;
+    max-height: 380px !important;
+    overflow-y: auto !important;
+    flex: 0 1 auto !important;
+  }
+
+  .dashboard-root > footer {
+    margin-top: 0 !important;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-root > nav {
+    padding: 10px 12px !important;
+  }
+
+  .dashboard-root > nav > .container-fluid {
+    flex-wrap: nowrap;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:first-child {
+    min-width: 0;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:first-child > div:last-child {
+    display: none !important;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:last-child {
+    gap: 6px !important;
+    margin-left: auto;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:last-child > div {
+    padding: 4px 8px !important;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:last-child > div > span {
+    display: none;
+  }
+
+  .dashboard-root > nav > .container-fluid > .d-flex:last-child > button {
+    padding: 6px 10px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .dashboard-root > .container-fluid {
+    padding: 12px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row {
+    gap: 12px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4,
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card,
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card {
+    border-radius: 22px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card {
+    padding: 18px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-3.col-lg-4 > .card > div:first-child > div[style*='calc(100vh - 420px)'] {
+    max-height: 260px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child {
+    padding: 18px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child > div:first-child > div {
+    flex-wrap: wrap;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child > div:last-child {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child > div:last-child > .btn {
+    justify-content: center;
+    width: 100%;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > .row {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > .row > div {
+    min-width: 82%;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card {
+    min-height: 360px !important;
+    padding: 18px !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:first-child {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:first-child > .position-relative {
+    width: 100%;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:first-child input {
+    width: 100% !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:last-child > div {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:last-child > div > div:first-child {
+    min-width: 0;
+    flex: 1 1 55%;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:last-child > div > div:last-child {
+    width: 100%;
+    justify-content: flex-start !important;
+  }
+}
+
+/* Domyślne (jasne) kolory karty klasy i jej elementów.
+   Odpowiadające przeciwieństwa (tryb nocny) są zdefiniowane niżej,
+   w sekcji "Tryb nocny", i nadpisują te wartości przez !important. */
+.dashboard-root {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+.dashboard-root .class-card {
+  color: #111827;
+  background-color: #f0eee6;
+  border: 1px solid #e5e2d9;
+  box-shadow: none;
+}
+
+.dashboard-root .class-card.active {
+  background-color: #ffffff;
+  border: 2px solid #8b5cf6;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.14);
+}
+
+.dashboard-root .class-card-title {
+  color: #111827;
+}
+
+.dashboard-root .class-card-count {
+  color: #111827;
+}
+
+.dashboard-root .class-card-meta {
+  color: #6b7280;
+}
+
+.dashboard-root .class-card strong {
+  color: #111827;
+}
+
+.user-badge {
+  background-color: #f5f4f0;
+}
+
+/* Tryb nocny. Domyślnie zachowany jest identyczny tryb dzienny. */
+.dashboard-root.dark-mode {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+}
+
+.dashboard-root.dark-mode > nav,
+.dashboard-root.dark-mode > footer {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+}
+
+.dashboard-root.dark-mode > .container-fluid .card {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18) !important;
+}
+
+.dashboard-root.dark-mode .bg-white {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dashboard-root.dark-mode .text-dark,
+.dashboard-root.dark-mode h1,
+.dashboard-root.dark-mode h2,
+.dashboard-root.dark-mode h3,
+.dashboard-root.dark-mode h4,
+.dashboard-root.dark-mode h5,
+.dashboard-root.dark-mode h6,
+.dashboard-root.dark-mode p {
+  color: #f3f4f6 !important;
+}
+
+.dashboard-root.dark-mode .text-muted {
+  color: #9ca3af !important;
+}
+
+.dashboard-root.dark-mode strong {
+  color: #e5e7eb !important;
+}
+
+.dashboard-root.dark-mode input.form-control {
+  background-color: #111827 !important;
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+}
+
+.dashboard-root.dark-mode input.form-control::placeholder {
+  color: #9ca3af !important;
+}
+
+.dashboard-root.dark-mode .btn-light {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #f3f4f6 !important;
+}
+
+.dashboard-root.dark-mode .class-panel > div:last-child .btn,
+.dashboard-root.dark-mode button.bg-white {
+  background-color: #111827 !important;
+  border-color: #374151 !important;
+  color: #f3f4f6 !important;
+}
+
+/* Karty klas — kontrast w trybie nocnym. Kolory są dodatkowo ustawiane inline, aby
+   Bootstrap i style komponentu nie nadpisywały tekstu ani tła. */
+.dashboard-root.dark-mode .class-card {
+  color: #f3f4f6 !important;
+  border-color: #374151 !important;
+  box-shadow: none !important;
+}
+
+.dashboard-root.dark-mode .class-card.active {
+  background-color: #111827 !important;
+  border-color: #8b5cf6 !important;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.18) !important;
+}
+
+.dashboard-root.dark-mode .class-card:not(.active) {
+  background-color: #263244 !important;
+}
+
+.dashboard-root.dark-mode .class-card-title,
+.dashboard-root.dark-mode .class-card-count,
+.dashboard-root.dark-mode .class-card-meta,
+.dashboard-root.dark-mode .class-card strong {
+  color: #f3f4f6 !important;
+}
+
+.dashboard-root.dark-mode .class-card-meta {
+  color: #aab4c3 !important;
+}
+
+.dashboard-root.dark-mode .user-badge {
+  background-color: #374151 !important;
+}
+
+.dashboard-root.dark-mode .position-fixed.bg-white {
+  background-color: #1f2937 !important;
+}
+
+.dashboard-root.dark-mode .dashboard-theme-switch {
+  background-color: #374151;
+  border-color: #4b5563;
+}
+
+.dashboard-root.dark-mode .dashboard-theme-switch .theme-switch-track {
+  background-color: #8b5cf6;
+}
+
+.dashboard-theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border: 1px solid #e5e2d9;
+  border-radius: 999px;
+  background-color: #f5f4f0;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.dashboard-theme-switch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dashboard-theme-switch .theme-switch-track {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background-color: #d1d5db;
+  transition: background-color 0.2s ease;
+}
+
+.dashboard-theme-switch .theme-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.dashboard-theme-switch input:checked + .theme-switch-track .theme-switch-thumb {
+  transform: translateX(16px);
+}
+
+.dashboard-theme-switch .theme-switch-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.dashboard-root.dark-mode .dashboard-theme-switch .theme-switch-label {
+  color: #f3f4f6;
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-theme-switch .theme-switch-label {
+    display: none;
+  }
+
+  .dashboard-theme-switch {
+    padding: 4px 6px;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-root > nav > .container-fluid > .d-flex:last-child > div {
+    display: none !important;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > div:first-child > div:last-child {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:first-child > .row > div {
+    min-width: 92%;
+  }
+
+  .dashboard-root > .container-fluid > .row > .col-12.col-xl-9.col-lg-8 > .card:nth-child(2) > .row > div > .card > div:last-child > div {
+    padding: 12px !important;
+  }
+}
