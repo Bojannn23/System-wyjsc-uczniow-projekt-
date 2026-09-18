@@ -4,11 +4,14 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaGraduationCap } from 'react-icons/fa';
 import { BsDisplay, BsPeople, BsEnvelope, BsKey } from 'react-icons/bs';
 import { SlBadge } from 'react-icons/sl'; // Ikona dla Dyrektora
+import { supabase, hasSupabase } from './lib/supabase';
 
 const LoginScreen = () => {
   const [activeRole, setActiveRole] = useState('Nauczyciel');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate(); // 2. Inicjalizacja nawigacji
 
@@ -18,15 +21,52 @@ const LoginScreen = () => {
     { id: 'Pedagog', label: 'Pedagog', icon: <BsPeople size={28} className="mb-2" />, bgColor: '#3b82f6' },
   ];
 
-  // 3. Obsługa wysłania formularza i przekierowania
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
 
-    // Tutaj możesz dodać walidację lub zapytanie do API
-    console.log('Zalogowano jako:', activeRole, email);
+    if (!hasSupabase || !supabase) {
+      setError('Brak konfiguracji Supabase. Uzupełnij plik .env.');
+      return;
+    }
 
-    // Przekierowanie użytkownika na podaną ścieżkę (np. /panel lub /dashboard)
+    setIsSubmitting(true);
+
+    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+    if (authError) {
+      setError('Nieprawidłowy adres e-mail lub hasło.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const { data: staffMember, error: staffError } = await supabase
+      .from('staff')
+      .select('id, roles:role_id (name)')
+      .eq('email', data.user.email)
+      .maybeSingle();
+
+    if (staffError || !staffMember) {
+      await supabase.auth.signOut();
+      setError('To konto nie ma przypisanego pracownika w bazie.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    const roleMap = {
+      Nauczyciel: 'nauczyciel',
+      Dyrektor: 'dyrektor',
+      Pedagog: 'pedagog',
+    };
+
+    if (staffMember.roles?.name !== roleMap[activeRole]) {
+      await supabase.auth.signOut();
+      setError('Wybrana rola nie jest przypisana do tego konta.');
+      setIsSubmitting(false);
+      return;
+    }
+
     navigate('/dashboard');
+    setIsSubmitting(false);
   };
 
   // const handleReset = (e) => {
@@ -101,6 +141,8 @@ const LoginScreen = () => {
             </div>
           </div>
 
+          {error && <div className="alert alert-danger py-2 small" role="alert">{error}</div>}
+
           {/* Hasło */}
           <div className="mb-4">
             <label className="form-label text-uppercase small fw-bold mb-2" style={{ fontSize: '0.75rem', letterSpacing: '0.5px' }}>
@@ -126,8 +168,9 @@ const LoginScreen = () => {
             type="submit" 
             className="btn w-100 py-3 mb-3 fw-semibold text-white rounded-3 shadow-sm"
             style={{ backgroundColor: '#332f2c' }}
+            disabled={isSubmitting}
           >
-            Wejdź do systemu
+            {isSubmitting ? 'Logowanie...' : 'Wejdź do systemu'}
           </button>
         </form>
 

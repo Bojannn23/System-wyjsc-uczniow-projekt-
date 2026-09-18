@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginScreen from './LoginScreen.jsx';
-import Dashboard from './assets/Dashboard.jsx';
+import Dashboard from './Dashboard.jsx';
 
 // Przykładowy komponent widoku po zalogowaniu
 // const Dashboard = () => (

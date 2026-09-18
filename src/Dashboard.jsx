@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { supabase, hasSupabase } from './lib/supabase';
 import { FaGraduationCap } from 'react-icons/fa';
 import { 
   BsList, 
@@ -24,94 +25,184 @@ import {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [selectedClass, setSelectedClass] = useState('3A');
+  const [selectedClass, setSelectedClass] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [staffMember, setStaffMember] = useState(null);
+  const [attendanceByClass, setAttendanceByClass] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
 
-  // Dane oddziałów wyświetlane w lewym panelu.
-  const classList = [
-    { id: '3A', name: '3A', studentsCount: 32, exitsToday: 24, teacher: 'Jan Nowak' },
-    { id: '1A', name: '1A', studentsCount: 28, exitsToday: 12, teacher: 'Anna Maj' },
-    { id: '1B', name: '1B', studentsCount: 30, exitsToday: 9, teacher: 'Marek Kowal' },
-    { id: '2A', name: '2A', studentsCount: 29, exitsToday: 7, teacher: 'Ewa Wiśniewska' },
-    { id: '2C', name: '2C', studentsCount: 27, exitsToday: 8, teacher: 'Karolina Wójcik' },
-    { id: '3B', name: '3B', studentsCount: 31, exitsToday: 11, teacher: 'Tomasz Pawlak' },
-    { id: '3C', name: '3C', studentsCount: 25, exitsToday: 6, teacher: 'Natalia Król' },
-    { id: '2B', name: '2B', studentsCount: 26, exitsToday: 5, teacher: 'Piotr Zieliński' },
-  ];
+  const [classList, setClassList] = useState([]);
 
-  // Uczniowie przypisani do poszczególnych oddziałów.
-  const classStudentsData = {
-    '3A': [
-      { id: 1, name: 'Jan Kowalski', status: 'Na zewnątrz', lastExit: '11:32 (6 min temu)', avatarBg: '#8b5cf6' },
-      { id: 2, name: 'Anna Nowak', status: 'Na zewnątrz', lastExit: '11:28 (10 min temu)', avatarBg: '#3b82f6' },
-      { id: 3, name: 'Mateusz Wiśniewski', status: 'Wrócił', lastExit: '11:15', avatarBg: '#10b981' },
-      { id: 4, name: 'Zofia Dąbrowska', status: 'Obecna', lastExit: '-', avatarBg: '#6b7280' },
-      { id: 5, name: 'Kacper Zieliński', status: 'Wrócił', lastExit: '10:45', avatarBg: '#f59e0b' },
-      { id: 6, name: 'Julia Kowalczyk', status: 'Obecna', lastExit: '-', avatarBg: '#ec4899' },
-      { id: 7, name: 'Michał Kamiński', status: 'Na zewnątrz', lastExit: '11:35 (3 min temu)', avatarBg: '#6366f1' },
-      { id: 8, name: 'Michał Kamiński', status: 'Na zewnątrz', lastExit: '11:35 (3 min temu)', avatarBg: '#6366f1' },
-      { id: 9, name: 'Michał Kamiński', status: 'Na zewnątrz', lastExit: '11:35 (3 min temu)', avatarBg: '#6366f1' },
-      { id: 10, name: 'Michał Kamiński', status: 'Na zewnątrz', lastExit: '11:35 (3 min temu)', avatarBg: '#6366f1' },
-    ],
-    '1A': [
-      { id: 1, name: 'Piotr Zieliński', status: 'Na zewnątrz', lastExit: '11:40 (2 min temu)', avatarBg: '#8b5cf6' },
-      { id: 2, name: 'Katarzyna Lewandowska', status: 'Wrócił', lastExit: '11:05', avatarBg: '#10b981' },
-    ],
-    '1B': [
-      { id: 1, name: 'Tomasz Szymański', status: 'Na zewnątrz', lastExit: '11:36 (5 min temu)', avatarBg: '#3b82f6' },
-    ],
-    '2A': [
-      { id: 1, name: 'Michał Kozłowski', status: 'Na zewnątrz', lastExit: '11:25 (12 min temu)', avatarBg: '#8b5cf6' },
-    ],
-    '2B': [],
-    '2C': [
-      { id: 1, name: 'Oliwia Mazur', status: 'Obecna', lastExit: '-', avatarBg: '#ec4899' },
-      { id: 2, name: 'Filip Baran', status: 'Na zewnątrz', lastExit: '11:20 (18 min temu)', avatarBg: '#3b82f6' },
-    ],
-    '3B': [
-      { id: 1, name: 'Lena Krupa', status: 'Wrócił', lastExit: '10:55', avatarBg: '#10b981' },
-      { id: 2, name: 'Adam Lis', status: 'Na zewnątrz', lastExit: '11:42 (1 min temu)', avatarBg: '#f59e0b' },
-      { id: 3, name: 'Maria Zając', status: 'Obecna', lastExit: '-', avatarBg: '#8b5cf6' },
-    ],
-    '3C': [
-      { id: 1, name: 'Igor Wrona', status: 'Na zewnątrz', lastExit: '11:38 (5 min temu)', avatarBg: '#6366f1' },
-    ]
-  };
+  const [classStudentsData, setClassStudentsData] = useState({});
 
-  // Historia wyjść filtrowana razem z wybraną klasą.
-  const activityHistoryData = {
-    '3A': [
-      { id: 101, studentName: 'Michał Kamiński', exitTime: '11:35', returnTime: 'w trakcie', duration: '3 min', reason: 'Łazienka', status: 'Na zewnątrz' },
-      { id: 102, studentName: 'Jan Kowalski', exitTime: '11:32', returnTime: 'w trakcie', duration: '6 min', reason: 'Łazienka', status: 'Na zewnątrz' },
-      { id: 103, studentName: 'Anna Nowak', exitTime: '11:28', returnTime: 'w trakcie', duration: '10 min', reason: 'Pielęgniarka', status: 'Na zewnątrz' },
-      { id: 104, studentName: 'Mateusz Wiśniewski', exitTime: '11:10', returnTime: '11:15', duration: '5 min', reason: 'Łazienka', status: 'Zakończone' },
-      { id: 105, studentName: 'Kacper Zieliński', exitTime: '10:35', returnTime: '10:45', duration: '10 min', reason: 'Szafka', status: 'Zakończone' },
-      { id: 106, studentName: 'Zofia Dąbrowska', exitTime: '09:40', returnTime: '09:58', duration: '18 min', reason: 'Sekretariat', status: 'Przekroczono czas' },
-    ],
-    '1A': [
-      { id: 201, studentName: 'Piotr Zieliński', exitTime: '11:40', returnTime: 'w trakcie', duration: '2 min', reason: 'Łazienka', status: 'Na zewnątrz' },
-    ],
-    '1B': [],
-    '2A': [],
-    '2B': [],
-    '2C': [
-      { id: 301, studentName: 'Filip Baran', exitTime: '11:20', returnTime: 'w trakcie', duration: '18 min', reason: 'Łazienka', status: 'Na zewnątrz' },
-    ],
-    '3B': [
-      { id: 401, studentName: 'Adam Lis', exitTime: '11:42', returnTime: 'w trakcie', duration: '1 min', reason: 'Sekretariat', status: 'Na zewnątrz' },
-      { id: 402, studentName: 'Lena Krupa', exitTime: '10:50', returnTime: '10:55', duration: '5 min', reason: 'Szafka', status: 'Zakończone' },
-    ],
-    '3C': [
-      { id: 501, studentName: 'Igor Wrona', exitTime: '11:38', returnTime: 'w trakcie', duration: '5 min', reason: 'Pielęgniarka', status: 'Na zewnątrz' },
-    ]
+  const [activityHistoryData, setActivityHistoryData] = useState({});
+
+  useEffect(() => {
+    if (!hasSupabase || !supabase) {
+      setLoadError('Brak konfiguracji Supabase. Uzupełnij plik .env i uruchom ponownie serwer.');
+      setIsLoading(false);
+      return;
+    }
+
+    const loadData = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error('Sesja wygasła. Zaloguj się ponownie.');
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const [classesResult, studentsResult, staffResult, exitsResult, attendanceResult] = await Promise.all([
+          supabase.from('school_classes').select('*'),
+          supabase.from('students').select('*'),
+          supabase.from('staff').select('id, full_name, email, role_id, roles:role_id (name)'),
+          supabase.from('student_exits').select('id, student_id, started_at, ended_at, reason, status, students:student_id (id, full_name, class_id)').gte('started_at', startOfDay.toISOString()),
+          supabase.from('attendance').select('student_id, status, students:student_id (class_id)')
+        ]);
+
+        const failedResult = [classesResult, studentsResult, staffResult, exitsResult, attendanceResult].find((result) => result.error);
+        if (failedResult) throw failedResult.error;
+
+        const { data: classesData } = classesResult;
+        const { data: studentsData } = studentsResult;
+        const { data: teacherData } = staffResult;
+        const { data: exitsData } = exitsResult;
+        const { data: attendanceData } = attendanceResult;
+
+        const currentStaff = (teacherData || []).find((staff) => staff.email === user?.email);
+        setStaffMember(currentStaff || null);
+
+        const teacherMap = Object.fromEntries((teacherData || []).map((teacher) => [teacher.id, teacher.full_name]));
+        const studentMapByClass = {};
+        const studentSummaryByClass = {};
+
+        (studentsData || []).forEach((student) => {
+          if (!studentMapByClass[student.class_id]) studentMapByClass[student.class_id] = [];
+          studentMapByClass[student.class_id].push(student);
+        });
+
+        Object.keys(studentMapByClass).forEach((classId) => {
+          studentSummaryByClass[classId] = studentMapByClass[classId].map((student) => ({
+            id: student.id,
+            name: student.full_name,
+            status: 'Obecna',
+            lastExit: '-',
+            avatarBg: ['#8b5cf6', '#3b82f6', '#10b981', '#6b7280', '#ec4899', '#f59e0b', '#6366f1'][Math.abs(student.id.split('-').join('').length) % 7],
+          }));
+        });
+
+        (exitsData || []).forEach((exit) => {
+          const student = exit.students;
+          if (!student) return;
+          const targetClass = student.class_id;
+          const classStudents = studentSummaryByClass[targetClass] || [];
+          const studentEntry = classStudents.find((item) => item.id === student.id);
+          if (!studentEntry) return;
+
+          studentEntry.status = exit.status === 'active' ? 'Na zewnątrz' : 'Wrócił';
+          studentEntry.lastExit = exit.ended_at ? new Date(exit.ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'w trakcie';
+        });
+
+        const mappedClasses = classesData.map((cls) => ({
+          id: cls.id,
+          name: cls.name,
+          studentsCount: (studentMapByClass[cls.id] || []).length,
+          exitsToday: (exitsData || []).filter((exit) => exit.students && exit.students.class_id === cls.id && exit.status === 'active').length,
+          teacher: teacherMap[cls.homeroom_teacher_id] || 'Brak wychowawcy',
+        }));
+
+        const attendanceSummary = {};
+        (attendanceData || []).forEach((record) => {
+          const classId = record.students?.class_id;
+          if (!classId) return;
+          if (!attendanceSummary[classId]) attendanceSummary[classId] = { total: 0, present: 0 };
+          attendanceSummary[classId].total += 1;
+          if (record.status === 'present' || record.status === 'late') attendanceSummary[classId].present += 1;
+        });
+
+        const historyByClass = {};
+        classesData.forEach((cls) => {
+          historyByClass[cls.id] = (exitsData || [])
+            .filter((exit) => exit.students && exit.students.class_id === cls.id)
+            .map((exit) => ({
+              id: exit.id,
+              studentName: exit.students?.full_name || 'Uczeń',
+              exitTime: new Date(exit.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              returnTime: exit.ended_at ? new Date(exit.ended_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'w trakcie',
+              duration: exit.ended_at ? `${Math.max(1, Math.round((new Date(exit.ended_at) - new Date(exit.started_at)) / 60000))} min` : 'w trakcie',
+              reason: exit.reason || 'Brak powodu',
+              status: exit.status === 'active' ? 'Na zewnątrz' : 'Zakończone',
+            }));
+        });
+
+        setClassList(mappedClasses);
+        setClassStudentsData(studentSummaryByClass);
+        setActivityHistoryData(historyByClass);
+        setAttendanceByClass(attendanceSummary);
+        if (mappedClasses.length > 0) {
+          setSelectedClass(mappedClasses[0].id);
+        }
+      } catch (error) {
+        console.error('Błąd pobierania danych z Supabase:', error);
+        setLoadError(error.message || 'Nie udało się pobrać danych z Supabase.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleLogout = async () => {
+    if (supabase) await supabase.auth.signOut();
+    navigate('/');
   };
 
   const currentClassInfo = classList.find(c => c.id === selectedClass) || classList[0];
   const currentStudents = classStudentsData[selectedClass] || [];
   const currentHistory = activityHistoryData[selectedClass] || [];
+  const attendanceSummary = attendanceByClass[selectedClass];
+  const attendancePercentage = attendanceSummary?.total
+    ? `${((attendanceSummary.present / attendanceSummary.total) * 100).toFixed(1)}%`
+    : 'Brak danych';
 
-  const handleLogout = () => navigate('/');
+  if (isLoading) {
+    return <div className="d-flex align-items-center justify-content-center min-vh-100 text-muted">Ładowanie danych z Supabase...</div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ backgroundColor: '#f5f4ef' }}>
+        <div className="card border-0 shadow-lg p-4 text-center" style={{ maxWidth: '520px' }}>
+          <h3 className="fw-bold mb-3">Nie udało się pobrać danych</h3>
+          <p className="text-muted mb-4">{loadError}</p>
+          <button onClick={handleLogout} className="btn text-white fw-semibold" style={{ backgroundColor: '#332f2c' }}>
+            Wróć do logowania
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (classList.length === 0) {
+    return (
+      <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ backgroundColor: '#f5f4ef', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+        <div className="card border-0 shadow-lg p-4 text-center" style={{ maxWidth: '480px', width: '100%', borderRadius: '24px' }}>
+          <div className="mb-3 d-inline-flex align-items-center justify-content-center rounded-circle text-white mx-auto" style={{ width: '64px', height: '64px', backgroundColor: '#ef4444' }}>
+            <BsExclamationCircleFill size={28} />
+          </div>
+          <h3 className="fw-bold mb-3" style={{ color: '#111827' }}>Brak klas w bazie</h3>
+          <p className="text-muted mb-4" style={{ fontSize: '0.96rem' }}>
+            Nie znaleziono żadnych rekordów klas w Supabase. Dodaj klasy w bazie, aby dashboard zaczął działać.
+          </p>
+          <button onClick={handleLogout} className="btn text-white fw-semibold px-4 py-2" style={{ backgroundColor: '#332f2c', borderRadius: '12px' }}>
+            Wróć do logowania
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const renderStatusBadge = (status) => {
     if (status === 'Na zewnątrz') {
@@ -215,7 +306,7 @@ const Dashboard = () => {
               <div className="rounded-circle text-white d-flex align-items-center justify-content-center fw-bold" style={{ width: '26px', height: '26px', backgroundColor: '#8b5cf6', fontSize: '0.75rem' }}>
                 JN
               </div>
-              <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>Jan Nowak <span className="text-muted fw-normal">- Nauczyciel</span></span>
+              <span className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>{staffMember?.full_name || 'Użytkownik'} <span className="text-muted fw-normal">- {staffMember?.roles?.name || 'Pracownik'}</span></span>
             </div>
             <button onClick={handleLogout} className="btn btn-light fw-semibold rounded-pill px-3 py-1.5" style={{ fontSize: '0.82rem', backgroundColor: '#f5f4f0', color: '#111827', border: '1px solid #e5e2d9' }}>
               Wyloguj się
@@ -344,7 +435,7 @@ const Dashboard = () => {
                   <div className="bg-white p-3 d-flex align-items-center justify-content-between h-100" style={{ borderRadius: 0, border: '1px solid #eae7e0' }}>
                     <div>
                       <span className="text-uppercase fw-bold text-muted d-block mb-1" style={{ fontSize: '0.65rem' }}>Frekwencja</span>
-                      <h4 className="fw-bold mb-0" style={{ fontSize: '1.4rem' }}>98.1%</h4>
+                      <h4 className="fw-bold mb-0" style={{ fontSize: '1.4rem' }}>{attendancePercentage}</h4>
                     </div>
                     <div className="p-2.5 d-flex align-items-center justify-content-center" style={{ backgroundColor: '#d1fae5', color: '#059669', borderRadius: '14px', width: '42px', height: '42px' }}>
                       <BsCheckCircleFill size={18} />
@@ -369,33 +460,39 @@ const Dashboard = () => {
 
                   {/* Lista przewijana wewnątrz karty, bez rozciągania strony. */}
                   <div className="d-flex flex-column gap-2" style={{ minHeight: 0, height: 0, padding: '4px 8px 12px 4px', overflowY: 'scroll', flex: '1 1 0%' }}>
-                    {currentStudents.map((student) => (
-                      <div 
-                        key={student.id} 
-                        className="d-flex align-items-center justify-content-between p-3 bg-white"
-                        style={{ borderRadius: '16px', border: '1px solid #eae7e0' }}
-                      >
-                        <div className="d-flex align-items-center gap-3">
-                          <div 
-                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
-                            style={{ width: '36px', height: '36px', backgroundColor: student.avatarBg, fontSize: '0.8rem' }}
-                          >
-                            {student.name.split(' ').map(n => n[0]).join('')}
+                    {currentStudents.length > 0 ? (
+                      currentStudents.map((student) => (
+                        <div 
+                          key={student.id} 
+                          className="d-flex align-items-center justify-content-between p-3 bg-white"
+                          style={{ borderRadius: '16px', border: '1px solid #eae7e0' }}
+                        >
+                          <div className="d-flex align-items-center gap-3">
+                            <div 
+                              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
+                              style={{ width: '36px', height: '36px', backgroundColor: student.avatarBg, fontSize: '0.8rem' }}
+                            >
+                              {student.name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <span className="fw-bold text-dark d-block" style={{ fontSize: '0.88rem' }}>{student.name}</span>
+                              <span className="text-muted" style={{ fontSize: '0.73rem' }}>Ostatnie wyjście: {student.lastExit}</span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="fw-bold text-dark d-block" style={{ fontSize: '0.88rem' }}>{student.name}</span>
-                            <span className="text-muted" style={{ fontSize: '0.73rem' }}>Ostatnie wyjście: {student.lastExit}</span>
-                          </div>
-                        </div>
 
-                        <div className="d-flex align-items-center gap-2">
-                          {renderStatusBadge(student.status)}
-                          <button className="btn bg-light border-0 fw-semibold px-2.5 py-1" style={{ fontSize: '0.75rem', borderRadius: '10px', color: '#374151' }}>
-                            Logi
-                          </button>
+                          <div className="d-flex align-items-center gap-2">
+                            {renderStatusBadge(student.status)}
+                            <button className="btn bg-light border-0 fw-semibold px-2.5 py-1" style={{ fontSize: '0.75rem', borderRadius: '10px', color: '#374151' }}>
+                              Logi
+                            </button>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="d-flex align-items-center justify-content-center h-100 text-muted p-4 bg-white" style={{ borderRadius: '16px', border: '1px solid #eae7e0', fontSize: '0.85rem' }}>
+                        Brak uczniów przypisanych do tej klasy.
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
               </div>
@@ -444,7 +541,7 @@ const Dashboard = () => {
                       ))
                     ) : (
                       <div className="d-flex align-items-center justify-content-center h-100 text-muted p-4 bg-white" style={{ borderRadius: '16px', border: '1px solid #eae7e0', fontSize: '0.85rem' }}>
-                        Brak wyjść zarejestrowanych dzisiaj.
+                        Brak wyjść zarejestrowanych dla tej klasy.
                       </div>
                     )}
                   </div>
