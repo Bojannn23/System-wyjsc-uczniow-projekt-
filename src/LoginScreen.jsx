@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 1. Dodano import useNavigate
+import { login } from './api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FaGraduationCap } from 'react-icons/fa';
 import { BsDisplay, BsPeople, BsEnvelope, BsKey } from 'react-icons/bs';
@@ -9,6 +10,8 @@ const LoginScreen = () => {
   const [activeRole, setActiveRole] = useState('Nauczyciel');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate(); // 2. Inicjalizacja nawigacji
 
@@ -19,14 +22,21 @@ const LoginScreen = () => {
   ];
 
   // 3. Obsługa wysłania formularza i przekierowania
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsSubmitting(true);
 
-    // Tutaj możesz dodać walidację lub zapytanie do API
-    console.log('Zalogowano jako:', activeRole, email);
-
-    // Przekierowanie użytkownika na podaną ścieżkę (np. /panel lub /dashboard)
-    navigate('/dashboard');
+    try {
+      const result = await login({ email, password, role: activeRole });
+      localStorage.setItem('schoolToken', result.token);
+      localStorage.setItem('schoolUser', JSON.stringify(result.user));
+      navigate('/dashboard');
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // const handleReset = (e) => {
@@ -56,6 +66,7 @@ const LoginScreen = () => {
           <h6 className="text-muted fw-semibold mb-1">Szkolny Węzeł</h6>
           <h2 className="fw-bold mb-3" style={{ color: '#2b2927' }}>Zaloguj się</h2>
           <p className="text-muted small">Wybierz swoją rolę w systemie, aby kontynuować</p>
+          {error && <div className="alert alert-danger py-2 small mb-0" role="alert">{error}</div>}
         </div>
 
         {/* Wybór Roli */}
@@ -126,8 +137,9 @@ const LoginScreen = () => {
             type="submit" 
             className="btn w-100 py-3 mb-3 fw-semibold text-white rounded-3 shadow-sm"
             style={{ backgroundColor: '#332f2c' }}
+            disabled={isSubmitting}
           >
-            Wejdź do systemu
+            {isSubmitting ? 'Logowanie...' : 'Wejdź do systemu'}
           </button>
         </form>
 

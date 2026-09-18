@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getClass, getClasses } from './api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './Dashboard.css';
 import { FaGraduationCap } from 'react-icons/fa';
@@ -31,6 +32,9 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [remoteClasses, setRemoteClasses] = useState([]);
+  const [remoteClass, setRemoteClass] = useState(null);
+  const [dataError, setDataError] = useState('');
 
   // Dane oddziałów wyświetlane w lewym panelu.
   const classList = [
@@ -111,11 +115,39 @@ const Dashboard = () => {
     ]
   };
 
-  const currentClassInfo = classList.find(c => c.id === selectedClass) || classList[0];
-  const currentStudents = classStudentsData[selectedClass] || [];
-  const currentHistory = activityHistoryData[selectedClass] || [];
+  useEffect(() => {
+    getClasses()
+      .then((classes) => {
+        setRemoteClasses(classes);
+        if (classes.length > 0) setSelectedClass(classes[0].id);
+      })
+      .catch((error) => {
+        if (error.message.includes('Sesja wygasła') || error.message.includes('Brak tokenu')) {
+          localStorage.removeItem('schoolToken');
+          navigate('/');
+        } else {
+          setDataError(error.message);
+        }
+      });
+  }, [navigate]);
 
-  const handleLogout = () => navigate('/');
+  useEffect(() => {
+    if (!remoteClasses.length) return;
+    getClass(selectedClass)
+      .then(setRemoteClass)
+      .catch((error) => setDataError(error.message));
+  }, [remoteClasses, selectedClass]);
+
+  const displayedClasses = remoteClasses.length > 0 ? remoteClasses : classList;
+  const currentClassInfo = remoteClass || classList.find(c => c.id === selectedClass) || classList[0];
+  const currentStudents = remoteClass?.students || classStudentsData[selectedClass] || [];
+  const currentHistory = remoteClass?.activityHistory || activityHistoryData[selectedClass] || [];
+
+  const handleLogout = () => {
+    localStorage.removeItem('schoolToken');
+    localStorage.removeItem('schoolUser');
+    navigate('/');
+  };
 
   const renderStatusBadge = (status) => {
     if (status === 'Na zewnątrz') {
@@ -250,6 +282,7 @@ const Dashboard = () => {
           {/* Lewy panel: oddziały, przewijana lista klas i stały przycisk dodawania. */}
           <div className="col-12 col-xl-3 col-lg-4" style={{ minHeight: 0 }}>
             <div className="card border-0 p-4 h-100 d-flex flex-column" style={{ position: 'relative', overflow: 'hidden', backgroundColor: '#f8f7f2', borderRadius: '28px', border: '1px solid #eae7e0' }}>
+              {dataError && <div className="alert alert-warning py-2 small mb-2">{dataError}</div>}
               <div className="d-flex flex-column flex-grow-1 overflow-hidden" style={{ paddingBottom: '64px' }}>
                 <h5 className="fw-bold mb-1" style={{ color: '#111827', fontSize: '1.15rem' }}>Oddziały szkolne</h5>
                 <p className="text-muted mb-3" style={{ fontSize: '0.8rem' }}>
@@ -263,7 +296,7 @@ const Dashboard = () => {
 
                 {/* Lista klas przewijana niezależnie od reszty panelu. */}
                 <div className="class-list d-flex flex-column gap-2 pe-1" style={{ height: 'calc(100vh - 420px)', minHeight: '180px', maxHeight: 'calc(100vh - 320px)', overflowY: 'auto', flex: '0 0 auto' }}>
-                  {classList.map((cls) => {
+                  {displayedClasses.map((cls) => {
                     const isActive = selectedClass === cls.id;
                     return (
                       <div

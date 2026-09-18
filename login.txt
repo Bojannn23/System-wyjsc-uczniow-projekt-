@@ -1,0 +1,3 @@
+E-mail: admin@szkolnywezel.pl
+Hasło: admin123
+Rola: Nauczyciel
