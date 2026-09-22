@@ -1,0 +1,23 @@
+.teacher-students-scrollbar {
+  scrollbar-color: #8b5cf6 #ece9e2;
+  scrollbar-width: thin;
+}
+
+.teacher-students-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.teacher-students-scrollbar::-webkit-scrollbar-track {
+  background: #ece9e2;
+  border-radius: 999px;
+}
+
+.teacher-students-scrollbar::-webkit-scrollbar-thumb {
+  background: #8b5cf6;
+  border: 2px solid #ece9e2;
+  border-radius: 999px;
+}
+
+.teacher-students-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6d3ed1;
+}
