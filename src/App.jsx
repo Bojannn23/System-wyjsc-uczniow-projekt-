@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginScreen from './LoginScreen.jsx';
 import Dashboard from './Dashboard.jsx';
+import Raport from './Raport.jsx';
 
 // Przykładowy komponent widoku po zalogowaniu
 // const Dashboard = () => (
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginScreen />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/raport" element={<Raport />} />
       </Routes>
     </BrowserRouter>
   );

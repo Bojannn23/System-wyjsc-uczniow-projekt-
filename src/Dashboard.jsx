@@ -75,9 +75,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!hasSupabase || !supabase) {
-      setLoadError(
-        "Brak konfiguracji Supabase. Uzupełnij plik .env i uruchom ponownie serwer.",
-      );
+      setLoadError("Brak konfiguracji Supabase. Uzupełnij plik .env i uruchom ponownie serwer.");
       setIsLoading(false);
       return;
     }
@@ -99,20 +97,14 @@ const Dashboard = () => {
         // PODSTAWOWE DANE
         // =========================
 
-        const [
-          classesResult,
-          studentsResult,
-          staffResult,
-          exitsResult,
-          attendanceResult,
-        ] = await Promise.all([
+        const [classesResult, studentsResult, staffResult, assignmentsResult, exitsResult, attendanceResult] = await Promise.all([
           supabase.from("school_classes").select("*"),
 
           supabase.from("students").select("*"),
 
-          supabase
-            .from("staff")
-            .select("id, full_name, email, role_id, roles:role_id (name)"),
+          supabase.from("staff").select("id, full_name, email, role_id, roles:role_id (name)"),
+
+          supabase.from("class_teacher_assignments").select("class_id, teacher_id, role_type"),
 
           supabase
             .from("student_exits")
@@ -133,26 +125,18 @@ const Dashboard = () => {
             )
             .gte("started_at", startOfDay.toISOString()),
 
-          supabase
-            .from("attendance")
-            .select(
-              `
+          supabase.from("attendance").select(
+            `
                 student_id,
                 status,
                 students:student_id (
                   class_id
                 )
               `,
-            ),
+          ),
         ]);
 
-        const failedResult = [
-          classesResult,
-          studentsResult,
-          staffResult,
-          exitsResult,
-          attendanceResult,
-        ].find((result) => result.error);
+        const failedResult = [classesResult, studentsResult, staffResult, assignmentsResult, exitsResult, attendanceResult].find((result) => result.error);
 
         if (failedResult) {
           throw failedResult.error;
@@ -161,6 +145,7 @@ const Dashboard = () => {
         const { data: classesData } = classesResult;
         const { data: studentsData } = studentsResult;
         const { data: teacherData } = staffResult;
+        const { data: assignmentsData } = assignmentsResult;
         const { data: exitsData } = exitsResult;
         const { data: attendanceData } = attendanceResult;
 
@@ -168,9 +153,7 @@ const Dashboard = () => {
         // AKTUALNY PRACOWNIK
         // =========================
 
-        const currentStaff = (teacherData || []).find(
-          (staff) => staff.email === user.email,
-        );
+        const currentStaff = (teacherData || []).find((staff) => staff.email === user.email);
 
         setStaffMember(currentStaff || null);
 
@@ -180,12 +163,7 @@ const Dashboard = () => {
 
         setTeacherActiveExits(
           (exitsData || [])
-            .filter(
-              (exit) =>
-                exit.status === "active" &&
-                exit.students &&
-                exit.students.id,
-            )
+            .filter((exit) => exit.status === "active" && exit.students && exit.students.id)
             .map((exit) => ({
               id: exit.id,
               studentId: exit.student_id,
@@ -201,10 +179,7 @@ const Dashboard = () => {
         // =========================
 
         if (currentStaff?.roles?.name === "nauczyciel") {
-          const {
-            data: assignments,
-            error: assignmentsError,
-          } = await supabase
+          const { data: assignments, error: assignmentsError } = await supabase
             .from("teacher_classes")
             .select("class_id")
             .eq("teacher_id", currentStaff.id);
@@ -213,17 +188,12 @@ const Dashboard = () => {
             throw assignmentsError;
           }
 
-          const assignedClassIds = (assignments || []).map(
-            (assignment) => assignment.class_id,
-          );
+          const assignedClassIds = (assignments || []).map((assignment) => assignment.class_id);
 
           if (assignedClassIds.length === 0) {
             setTeacherClasses([]);
           } else {
-            const {
-              data: assignedClasses,
-              error: assignedClassesError,
-            } = await supabase
+            const { data: assignedClasses, error: assignedClassesError } = await supabase
               .from("school_classes")
               .select("id, name")
               .in("id", assignedClassIds);
@@ -240,12 +210,7 @@ const Dashboard = () => {
         // MAPOWANIE NAUCZYCIELI
         // =========================
 
-        const teacherMap = Object.fromEntries(
-          (teacherData || []).map((teacher) => [
-            teacher.id,
-            teacher.full_name,
-          ]),
-        );
+        const teacherMap = Object.fromEntries((teacherData || []).map((teacher) => [teacher.id, teacher.full_name]));
 
         // =========================
         // UCZNIOWIE W KLASACH
@@ -263,26 +228,15 @@ const Dashboard = () => {
         });
 
         Object.keys(studentMapByClass).forEach((classId) => {
-          studentSummaryByClass[classId] =
-            studentMapByClass[classId].map((student) => ({
-              id: student.id,
-              name: student.full_name,
-              status: "Obecna",
-              lastExit: "-",
-              avatarBg: [
-                "#8b5cf6",
-                "#3b82f6",
-                "#10b981",
-                "#6b7280",
-                "#ec4899",
-                "#f59e0b",
-                "#6366f1",
-              ][
-                Math.abs(
-                  student.id.replaceAll("-", "").length,
-                ) % 7
-              ],
-            }));
+          studentSummaryByClass[classId] = studentMapByClass[classId].map((student) => ({
+            id: student.id,
+            name: student.full_name,
+            status: "Obecna",
+            lastExit: "-",
+            avatarBg: ["#8b5cf6", "#3b82f6", "#10b981", "#6b7280", "#ec4899", "#f59e0b", "#6366f1"][
+              Math.abs(student.id.replaceAll("-", "").length) % 7
+            ],
+          }));
         });
 
         // =========================
@@ -296,19 +250,13 @@ const Dashboard = () => {
 
           const targetClass = student.class_id;
 
-          const classStudents =
-            studentSummaryByClass[targetClass] || [];
+          const classStudents = studentSummaryByClass[targetClass] || [];
 
-          const studentEntry = classStudents.find(
-            (item) => item.id === student.id,
-          );
+          const studentEntry = classStudents.find((item) => item.id === student.id);
 
           if (!studentEntry) return;
 
-          studentEntry.status =
-            exit.status === "active"
-              ? "Na zewnątrz"
-              : "Wrócił";
+          studentEntry.status = exit.status === "active" ? "Na zewnątrz" : "Wrócił";
 
           studentEntry.lastExit = exit.ended_at
             ? new Date(exit.ended_at).toLocaleTimeString([], {
@@ -326,18 +274,14 @@ const Dashboard = () => {
           id: cls.id,
           name: cls.name,
 
-          studentsCount:
-            (studentMapByClass[cls.id] || []).length,
+          studentsCount: (studentMapByClass[cls.id] || []).length,
 
-          exitsToday: (exitsData || []).filter(
-            (exit) =>
-              exit.students &&
-              exit.students.class_id === cls.id,
-          ).length,
+          exitsToday: (exitsData || []).filter((exit) => exit.students && exit.students.class_id === cls.id).length,
 
           teacher:
-            teacherMap[cls.homeroom_teacher_id] ||
-            "Brak wychowawcy",
+            teacherMap[
+              (assignmentsData || []).find((assignment) => assignment.class_id === cls.id && assignment.role_type === "homeroom")?.teacher_id
+            ] || "Brak wychowawcy",
         }));
 
         // =========================
@@ -360,10 +304,7 @@ const Dashboard = () => {
 
           attendanceSummary[classId].total += 1;
 
-          if (
-            record.status === "present" ||
-            record.status === "late"
-          ) {
+          if (record.status === "present" || record.status === "late") {
             attendanceSummary[classId].present += 1;
           }
         });
@@ -376,51 +317,31 @@ const Dashboard = () => {
 
         (classesData || []).forEach((cls) => {
           historyByClass[cls.id] = (exitsData || [])
-            .filter(
-              (exit) =>
-                exit.students &&
-                exit.students.class_id === cls.id,
-            )
+            .filter((exit) => exit.students && exit.students.class_id === cls.id)
             .map((exit) => ({
               id: exit.id,
 
-              studentName:
-                exit.students?.full_name || "Uczeń",
+              studentName: exit.students?.full_name || "Uczeń",
 
-              exitTime: new Date(
-                exit.started_at,
-              ).toLocaleTimeString([], {
+              exitTime: new Date(exit.started_at).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               }),
 
               returnTime: exit.ended_at
-                ? new Date(
-                    exit.ended_at,
-                  ).toLocaleTimeString([], {
+                ? new Date(exit.ended_at).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })
                 : "w trakcie",
 
               duration: exit.ended_at
-                ? `${Math.max(
-                    1,
-                    Math.round(
-                      (new Date(exit.ended_at) -
-                        new Date(exit.started_at)) /
-                        60000,
-                    ),
-                  )} min`
+                ? `${Math.max(1, Math.round((new Date(exit.ended_at) - new Date(exit.started_at)) / 60000))} min`
                 : "w trakcie",
 
-              reason:
-                exit.reason || "Brak powodu",
+              reason: exit.reason || "Brak powodu",
 
-              status:
-                exit.status === "active"
-                  ? "Na zewnątrz"
-                  : "Zakończone",
+              status: exit.status === "active" ? "Na zewnątrz" : "Zakończone",
             }));
         });
 
@@ -437,15 +358,9 @@ const Dashboard = () => {
           setSelectedClass(mappedClasses[0].id);
         }
       } catch (error) {
-        console.error(
-          "Błąd pobierania danych z Supabase:",
-          error,
-        );
+        console.error("Błąd pobierania danych z Supabase:", error);
 
-        setLoadError(
-          error.message ||
-            "Nie udało się pobrać danych z Supabase.",
-        );
+        setLoadError(error.message || "Nie udało się pobrać danych z Supabase.");
       } finally {
         setIsLoading(false);
       }
@@ -495,12 +410,7 @@ const Dashboard = () => {
   // =========================
 
   const saveTeacherExit = async () => {
-    if (
-      !selectedStudentForExit ||
-      !selectedTeacherClass ||
-      !exitReason ||
-      !supabase
-    ) {
+    if (!selectedStudentForExit || !selectedTeacherClass || !exitReason || !supabase) {
       return;
     }
 
@@ -514,10 +424,7 @@ const Dashboard = () => {
       // ZAPIS DO SUPABASE
       // =========================
 
-      const {
-        data: newExit,
-        error,
-      } = await supabase
+      const { data: newExit, error } = await supabase
         .from("student_exits")
         .insert({
           student_id: selectedStudentForExit.id,
@@ -525,9 +432,7 @@ const Dashboard = () => {
           reason: exitReason,
           status: "active",
         })
-        .select(
-          "id, student_id, started_at, reason, status",
-        )
+        .select("id, student_id, started_at, reason, status")
         .single();
 
       if (error) {
@@ -543,8 +448,7 @@ const Dashboard = () => {
         {
           id: newExit.id,
           studentId: newExit.student_id,
-          studentName:
-            selectedStudentForExit.name,
+          studentName: selectedStudentForExit.name,
           classId: selectedTeacherClass.id,
           reason: newExit.reason,
           startedAt: newExit.started_at,
@@ -558,9 +462,7 @@ const Dashboard = () => {
       setClassStudentsData((previous) => ({
         ...previous,
 
-        [selectedTeacherClass.id]: (
-          previous[selectedTeacherClass.id] || []
-        ).map((student) =>
+        [selectedTeacherClass.id]: (previous[selectedTeacherClass.id] || []).map((student) =>
           student.id === selectedStudentForExit.id
             ? {
                 ...student,
@@ -581,23 +483,18 @@ const Dashboard = () => {
         [selectedTeacherClass.id]: [
           {
             id: newExit.id,
-            studentName:
-              selectedStudentForExit.name,
-            exitTime: new Date(
-              newExit.started_at,
-            ).toLocaleTimeString([], {
+            studentName: selectedStudentForExit.name,
+            exitTime: new Date(newExit.started_at).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             }),
             returnTime: "w trakcie",
             duration: "w trakcie",
-            reason:
-              newExit.reason || "Brak powodu",
+            reason: newExit.reason || "Brak powodu",
             status: "Na zewnątrz",
           },
 
-          ...(previous[selectedTeacherClass.id] ||
-            []),
+          ...(previous[selectedTeacherClass.id] || []),
         ],
       }));
 
@@ -607,15 +504,9 @@ const Dashboard = () => {
 
       closeTeacherExitModal(true);
     } catch (error) {
-      console.error(
-        "Błąd zapisu wyjścia:",
-        error,
-      );
+      console.error("Błąd zapisu wyjścia:", error);
 
-      setTeacherExitError(
-        error.message ||
-          "Nie udało się zarejestrować wyjścia.",
-      );
+      setTeacherExitError(error.message || "Nie udało się zarejestrować wyjścia.");
     } finally {
       setIsSavingTeacherExit(false);
     }
@@ -651,11 +542,7 @@ const Dashboard = () => {
       // USUNIĘCIE Z AKTYWNYCH
       // =========================
 
-      setTeacherActiveExits((previous) =>
-        previous.filter(
-          (item) => item.id !== exit.id,
-        ),
-      );
+      setTeacherActiveExits((previous) => previous.filter((item) => item.id !== exit.id));
 
       // =========================
       // ZMIANA STATUSU UCZNIA
@@ -664,16 +551,12 @@ const Dashboard = () => {
       setClassStudentsData((previous) => ({
         ...previous,
 
-        [exit.classId]: (
-          previous[exit.classId] || []
-        ).map((student) =>
+        [exit.classId]: (previous[exit.classId] || []).map((student) =>
           student.id === exit.studentId
             ? {
                 ...student,
                 status: "Wrócił",
-                lastExit: new Date(
-                  endedAt,
-                ).toLocaleTimeString([], {
+                lastExit: new Date(endedAt).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 }),
@@ -689,27 +572,16 @@ const Dashboard = () => {
       setActivityHistoryData((previous) => ({
         ...previous,
 
-        [exit.classId]: (
-          previous[exit.classId] || []
-        ).map((log) => {
+        [exit.classId]: (previous[exit.classId] || []).map((log) => {
           if (log.id !== exit.id) {
             return log;
           }
 
-          const duration = Math.max(
-            1,
-            Math.round(
-              (new Date(endedAt) -
-                new Date(exit.startedAt)) /
-                60000,
-            ),
-          );
+          const duration = Math.max(1, Math.round((new Date(endedAt) - new Date(exit.startedAt)) / 60000));
 
           return {
             ...log,
-            returnTime: new Date(
-              endedAt,
-            ).toLocaleTimeString([], {
+            returnTime: new Date(endedAt).toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
             }),
@@ -719,15 +591,9 @@ const Dashboard = () => {
         }),
       }));
     } catch (error) {
-      console.error(
-        "Błąd kończenia wyjścia:",
-        error,
-      );
+      console.error("Błąd kończenia wyjścia:", error);
 
-      setTeacherExitError(
-        error.message ||
-          "Nie udało się zakończyć wyjścia.",
-      );
+      setTeacherExitError(error.message || "Nie udało się zakończyć wyjścia.");
     }
   };
 
@@ -735,96 +601,54 @@ const Dashboard = () => {
   // INFORMACJE O WYBRANEJ KLASIE
   // =========================
 
-  const currentClassInfo =
-    classList.find(
-      (c) => c.id === selectedClass,
-    ) || classList[0];
+  const currentClassInfo = classList.find((c) => c.id === selectedClass) || classList[0];
 
-  const currentStudents =
-    classStudentsData[selectedClass] || [];
+  const currentStudents = classStudentsData[selectedClass] || [];
 
-  const currentHistory =
-    activityHistoryData[selectedClass] || [];
+  const currentHistory = activityHistoryData[selectedClass] || [];
 
-  const attendanceSummary =
-    attendanceByClass[selectedClass];
+  const attendanceSummary = attendanceByClass[selectedClass];
 
-  const attendancePercentage =
-    attendanceSummary?.total
-      ? `${(
-          (attendanceSummary.present /
-            attendanceSummary.total) *
-          100
-        ).toFixed(1)}%`
-      : "Brak danych";
+  const attendancePercentage = attendanceSummary?.total
+    ? `${((attendanceSummary.present / attendanceSummary.total) * 100).toFixed(1)}%`
+    : "Brak danych";
 
   // =========================
   // CZY NAUCZYCIEL
   // =========================
 
-  const isTeacher =
-    staffMember?.roles?.name === "nauczyciel";
+  const isTeacher = staffMember?.roles?.name === "nauczyciel";
 
   // =========================
   // UCZNIOWIE WYBRANEJ KLASY NAUCZYCIELA
   // =========================
 
-  const selectedTeacherStudents =
-    selectedTeacherClass
-      ? classStudentsData[
-          selectedTeacherClass.id
-        ] || []
-      : [];
+  const selectedTeacherStudents = selectedTeacherClass ? classStudentsData[selectedTeacherClass.id] || [] : [];
 
-  const filteredTeacherStudents =
-    selectedTeacherStudents.filter(
-      (student) =>
-        student.name
-          .toLocaleLowerCase("pl-PL")
-          .includes(
-            teacherSearchQuery.toLocaleLowerCase(
-              "pl-PL",
-            ),
-          ),
-    );
+  const filteredTeacherStudents = selectedTeacherStudents.filter((student) =>
+    student.name.toLocaleLowerCase("pl-PL").includes(teacherSearchQuery.toLocaleLowerCase("pl-PL")),
+  );
 
   // =========================
   // AKTYWNE WYJŚCIA WYBRANEJ KLASY
   // =========================
 
-  const selectedClassActiveExits =
-    selectedTeacherClass
-      ? teacherActiveExits.filter(
-          (exit) =>
-            exit.classId ===
-            selectedTeacherClass.id,
-        )
-      : [];
+  const selectedClassActiveExits = selectedTeacherClass
+    ? teacherActiveExits.filter((exit) => exit.classId === selectedTeacherClass.id)
+    : [];
 
   // =========================
   // CZAS WYJŚCIA
   // =========================
 
   const formatExitDuration = (startedAt) => {
-    const totalSeconds = Math.max(
-      0,
-      Math.floor(
-        (currentTime -
-          new Date(startedAt).getTime()) /
-          1000,
-      ),
-    );
+    const totalSeconds = Math.max(0, Math.floor((currentTime - new Date(startedAt).getTime()) / 1000));
 
-    const minutes = Math.floor(
-      totalSeconds / 60,
-    );
+    const minutes = Math.floor(totalSeconds / 60);
 
-    const seconds =
-      totalSeconds % 60;
+    const seconds = totalSeconds % 60;
 
-    return `${minutes}:${String(
-      seconds,
-    ).padStart(2, "0")}`;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
   };
 
   // =========================
@@ -832,11 +656,7 @@ const Dashboard = () => {
   // =========================
 
   if (isLoading) {
-    return (
-      <div className="d-flex align-items-center justify-content-center min-vh-100 text-muted">
-        Ładowanie danych z Supabase...
-      </div>
-    );
+    return <div className="d-flex align-items-center justify-content-center min-vh-100 text-muted">Ładowanie danych z Supabase...</div>;
   }
 
   // =========================
@@ -857,13 +677,9 @@ const Dashboard = () => {
             maxWidth: "520px",
           }}
         >
-          <h3 className="fw-bold mb-3">
-            Nie udało się pobrać danych
-          </h3>
+          <h3 className="fw-bold mb-3">Nie udało się pobrać danych</h3>
 
-          <p className="text-muted mb-4">
-            {loadError}
-          </p>
+          <p className="text-muted mb-4">{loadError}</p>
 
           <button
             onClick={handleLogout}
@@ -883,17 +699,13 @@ const Dashboard = () => {
   // BRAK KLAS
   // =========================
 
-  if (
-    !isTeacher &&
-    classList.length === 0
-  ) {
+  if (!isTeacher && classList.length === 0) {
     return (
       <div
         className="d-flex align-items-center justify-content-center min-vh-100"
         style={{
           backgroundColor: "#f5f4ef",
-          fontFamily:
-            "system-ui, -apple-system, sans-serif",
+          fontFamily: "system-ui, -apple-system, sans-serif",
         }}
       >
         <div
@@ -915,10 +727,7 @@ const Dashboard = () => {
             <BsExclamationCircleFill size={28} />
           </div>
 
-          <h3
-            className="fw-bold mb-3"
-            style={{ color: "#111827" }}
-          >
+          <h3 className="fw-bold mb-3" style={{ color: "#111827" }}>
             Brak klas w bazie
           </h3>
 
@@ -928,8 +737,7 @@ const Dashboard = () => {
               fontSize: "0.96rem",
             }}
           >
-            Nie znaleziono żadnych rekordów klas
-            w Supabase.
+            Nie znaleziono żadnych rekordów klas w Supabase.
           </p>
 
           <button
@@ -967,11 +775,7 @@ const Dashboard = () => {
       );
     }
 
-    if (
-      status === "Wrócił" ||
-      status === "Zakończone" ||
-      status === "Obecna"
-    ) {
+    if (status === "Wrócił" || status === "Zakończone" || status === "Obecna") {
       return (
         <span
           className="badge px-3 py-1 rounded-pill fw-semibold"
@@ -981,11 +785,7 @@ const Dashboard = () => {
             fontSize: "0.75rem",
           }}
         >
-          {status === "Obecna"
-            ? "Obecna"
-            : status === "Wrócił"
-              ? "Wrócił"
-              : "Zakończone"}
+          {status === "Obecna" ? "Obecna" : status === "Wrócił" ? "Wrócił" : "Zakończone"}
         </span>
       );
     }
@@ -1005,8 +805,7 @@ const Dashboard = () => {
         overflow: "hidden",
         backgroundColor: "#ffffff",
         color: "#111827",
-        fontFamily:
-          "system-ui, -apple-system, sans-serif",
+        fontFamily: "system-ui, -apple-system, sans-serif",
       }}
     >
       {/* =========================
@@ -1015,11 +814,9 @@ const Dashboard = () => {
 
       {isSidebarOpen && (
         <div
-          className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-30"
-          style={{ zIndex: 1040 }}
-          onClick={() =>
-            setIsSidebarOpen(false)
-          }
+          className="position-fixed top-0 start-0 w-100 h-100"
+          style={{ zIndex: 1040, backgroundColor: "rgba(17, 24, 39, 0.12)" }}
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
@@ -1028,11 +825,8 @@ const Dashboard = () => {
         style={{
           width: "260px",
           zIndex: 1050,
-          transform: isSidebarOpen
-            ? "translateX(0)"
-            : "translateX(-100%)",
-          transition:
-            "transform 0.25s ease-in-out",
+          transform: isSidebarOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease-in-out",
         }}
       >
         <div>
@@ -1049,17 +843,10 @@ const Dashboard = () => {
                 <FaGraduationCap size={16} />
               </div>
 
-              <h6 className="fw-bold mb-0 text-dark">
-                Szkolny Węzeł
-              </h6>
+              <h6 className="fw-bold mb-0 text-dark">Szkolny Węzeł</h6>
             </div>
 
-            <button
-              className="btn btn-light rounded-circle p-1"
-              onClick={() =>
-                setIsSidebarOpen(false)
-              }
-            >
+            <button className="btn btn-light rounded-circle p-1" onClick={() => setIsSidebarOpen(false)}>
               <BsX size={22} />
             </button>
           </div>
@@ -1080,8 +867,7 @@ const Dashboard = () => {
                   href="#klasy"
                   className="nav-link active d-flex align-items-center gap-2 fw-semibold rounded-3 py-2"
                   style={{
-                    backgroundColor:
-                      "#8b5cf6",
+                    backgroundColor: "#8b5cf6",
                     fontSize: "0.85rem",
                   }}
                 >
@@ -1092,33 +878,14 @@ const Dashboard = () => {
 
               <li className="nav-item">
                 <a
-                  href="#wyjscia"
+                  href="/raport"
                   className="nav-link text-dark d-flex align-items-center gap-2 fw-semibold rounded-3 py-2"
                   style={{
                     fontSize: "0.85rem",
                   }}
                 >
-                  <BsDoorOpen
-                    size={16}
-                    className="text-muted"
-                  />
-                  Rejestracja wyjść
-                </a>
-              </li>
-
-              <li className="nav-item">
-                <a
-                  href="#statystyki"
-                  className="nav-link text-dark d-flex align-items-center gap-2 fw-semibold rounded-3 py-2"
-                  style={{
-                    fontSize: "0.85rem",
-                  }}
-                >
-                  <BsBarChartLine
-                    size={16}
-                    className="text-muted"
-                  />
-                  Statystyki i raporty
+                  <BsBarChartLine size={16} className="text-muted" />
+                  Raport klasy
                 </a>
               </li>
             </ul>
@@ -1133,10 +900,7 @@ const Dashboard = () => {
               fontSize: "0.85rem",
             }}
           >
-            <BsQuestionCircle
-              size={16}
-              className="text-muted"
-            />
+            <BsQuestionCircle size={16} className="text-muted" />
             Pomoc
           </a>
 
@@ -1167,12 +931,7 @@ const Dashboard = () => {
       >
         <div className="container-fluid p-0">
           <div className="d-flex align-items-center gap-3">
-            <button
-              className="btn border-0 p-1 text-dark me-1"
-              onClick={() =>
-                setIsSidebarOpen(true)
-              }
-            >
+            <button className="btn border-0 p-1 text-dark me-1" onClick={() => setIsSidebarOpen(true)}>
               <BsList size={26} />
             </button>
 
@@ -1206,7 +965,7 @@ const Dashboard = () => {
                     letterSpacing: "0.5px",
                   }}
                 >
-                  REJESTRACJA WYJŚĆ
+                  PANEL SZKOLNY
                 </span>
               </div>
             </div>
@@ -1243,13 +1002,8 @@ const Dashboard = () => {
                   fontSize: "0.85rem",
                 }}
               >
-                {staffMember?.full_name ||
-                  "Użytkownik"}{" "}
-                <span className="text-muted fw-normal">
-                  -{" "}
-                  {staffMember?.roles?.name ||
-                    "Pracownik"}
-                </span>
+                {staffMember?.full_name || "Użytkownik"}{" "}
+                <span className="text-muted fw-normal">- {staffMember?.roles?.name || "Pracownik"}</span>
               </span>
             </div>
 
@@ -1260,8 +1014,7 @@ const Dashboard = () => {
                 fontSize: "0.82rem",
                 backgroundColor: "#f5f4f0",
                 color: "#111827",
-                border:
-                  "1px solid #e5e2d9",
+                border: "1px solid #e5e2d9",
               }}
             >
               Wyloguj się
@@ -1298,10 +1051,7 @@ const Dashboard = () => {
             ========================= */}
 
             {selectedTeacherClass ? (
-              <section
-                className="h-100 d-flex flex-column"
-                aria-labelledby="selected-class-heading"
-              >
+              <section className="h-100 d-flex flex-column" aria-labelledby="selected-class-heading">
                 {/* HEADER KLASY */}
 
                 <div
@@ -1309,8 +1059,7 @@ const Dashboard = () => {
                   style={{
                     backgroundColor: "#f8f7f2",
                     borderRadius: "28px",
-                    border:
-                      "1px solid #eae7e0",
+                    border: "1px solid #eae7e0",
                   }}
                 >
                   <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -1320,8 +1069,7 @@ const Dashboard = () => {
                         style={{
                           width: "54px",
                           height: "54px",
-                          backgroundColor:
-                            "#8b5cf6",
+                          backgroundColor: "#8b5cf6",
                           color: "#ffffff",
                         }}
                       >
@@ -1333,8 +1081,7 @@ const Dashboard = () => {
                           className="text-uppercase fw-bold text-muted d-block mb-1"
                           style={{
                             fontSize: "0.7rem",
-                            letterSpacing:
-                              "0.5px",
+                            letterSpacing: "0.5px",
                           }}
                         >
                           Moje klasy
@@ -1348,10 +1095,7 @@ const Dashboard = () => {
                             fontSize: "1.6rem",
                           }}
                         >
-                          Klasa{" "}
-                          {
-                            selectedTeacherClass.name
-                          }
+                          Klasa {selectedTeacherClass.name}
                         </h1>
                       </div>
                     </div>
@@ -1359,17 +1103,12 @@ const Dashboard = () => {
                     <button
                       type="button"
                       onClick={() => {
-                        setSelectedTeacherClass(
-                          null,
-                        );
-                        setTeacherSearchQuery(
-                          "",
-                        );
+                        setSelectedTeacherClass(null);
+                        setTeacherSearchQuery("");
                       }}
                       className="btn bg-white fw-semibold px-3 py-2"
                       style={{
-                        border:
-                          "1px solid #e5e2d9",
+                        border: "1px solid #e5e2d9",
                         borderRadius: "14px",
                         color: "#374151",
                       }}
@@ -1381,11 +1120,7 @@ const Dashboard = () => {
 
                 {/* BŁĄD */}
 
-                {teacherExitError && (
-                  <div className="alert alert-danger py-2 px-3 mb-3 flex-shrink-0">
-                    {teacherExitError}
-                  </div>
-                )}
+                {teacherExitError && <div className="alert alert-danger py-2 px-3 mb-3 flex-shrink-0">{teacherExitError}</div>}
 
                 <div
                   className="row g-4 flex-grow-1"
@@ -1410,11 +1145,9 @@ const Dashboard = () => {
                       style={{
                         minHeight: 0,
                         overflow: "hidden",
-                        backgroundColor:
-                          "#f8f7f2",
+                        backgroundColor: "#f8f7f2",
                         borderRadius: "28px",
-                        border:
-                          "1px solid #eae7e0",
+                        border: "1px solid #eae7e0",
                       }}
                     >
                       <div className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3 mb-3 flex-shrink-0">
@@ -1423,8 +1156,7 @@ const Dashboard = () => {
                             className="fw-bold mb-1"
                             style={{
                               color: "#111827",
-                              fontSize:
-                                "1.2rem",
+                              fontSize: "1.2rem",
                             }}
                           >
                             Lista uczniów
@@ -1433,45 +1165,27 @@ const Dashboard = () => {
                           <span
                             className="text-muted"
                             style={{
-                              fontSize:
-                                "0.85rem",
+                              fontSize: "0.85rem",
                             }}
                           >
-                            {
-                              selectedTeacherStudents.length
-                            }{" "}
-                            uczniów w klasie
+                            {selectedTeacherStudents.length} uczniów w klasie
                           </span>
                         </div>
 
                         <div className="position-relative">
-                          <BsSearch
-                            size={14}
-                            className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
-                          />
+                          <BsSearch size={14} className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" />
 
                           <input
                             type="search"
-                            value={
-                              teacherSearchQuery
-                            }
-                            onChange={(event) =>
-                              setTeacherSearchQuery(
-                                event.target
-                                  .value,
-                              )
-                            }
+                            value={teacherSearchQuery}
+                            onChange={(event) => setTeacherSearchQuery(event.target.value)}
                             placeholder="Szukaj ucznia..."
                             className="form-control bg-white ps-5 py-2"
                             style={{
-                              width:
-                                "220px",
-                              border:
-                                "1px solid #e5e2d9",
-                              borderRadius:
-                                "14px",
-                              fontSize:
-                                "0.85rem",
+                              width: "220px",
+                              border: "1px solid #e5e2d9",
+                              borderRadius: "14px",
+                              fontSize: "0.85rem",
                             }}
                           />
                         </div>
@@ -1486,130 +1200,80 @@ const Dashboard = () => {
                           flex: "1 1 0%",
                         }}
                       >
-                        {filteredTeacherStudents.length >
-                        0 ? (
-                          filteredTeacherStudents.map(
-                            (student) => {
-                              const isOutside =
-                                student.status ===
-                                "Na zewnątrz";
+                        {filteredTeacherStudents.length > 0 ? (
+                          filteredTeacherStudents.map((student) => {
+                            const isOutside = student.status === "Na zewnątrz";
 
-                              return (
+                            return (
+                              <div
+                                key={student.id}
+                                className="d-flex align-items-center gap-3 p-3 bg-white"
+                                style={{
+                                  borderRadius: "18px",
+                                  border: "1px solid #eae7e0",
+                                }}
+                              >
                                 <div
-                                  key={
-                                    student.id
-                                  }
-                                  className="d-flex align-items-center gap-3 p-3 bg-white"
+                                  className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
                                   style={{
-                                    borderRadius:
-                                      "18px",
-                                    border:
-                                      "1px solid #eae7e0",
+                                    width: "42px",
+                                    height: "42px",
+                                    backgroundColor: student.avatarBg,
                                   }}
                                 >
-                                  <div
-                                    className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                    style={{
-                                      width:
-                                        "42px",
-                                      height:
-                                        "42px",
-                                      backgroundColor:
-                                        student.avatarBg,
-                                    }}
-                                  >
-                                    {student.name
-                                      .split(
-                                        " ",
-                                      )
-                                      .map(
-                                        (
-                                          part,
-                                        ) =>
-                                          part[0],
-                                      )
-                                      .slice(
-                                        0,
-                                        2,
-                                      )
-                                      .join(
-                                        "",
-                                      )}
-                                  </div>
-
-                                  <div className="flex-grow-1 min-w-0">
-                                    <span
-                                      className="fw-semibold d-block"
-                                      style={{
-                                        color:
-                                          "#111827",
-                                      }}
-                                    >
-                                      {
-                                        student.name
-                                      }
-                                    </span>
-
-                                    <span
-                                      className="text-muted"
-                                      style={{
-                                        fontSize:
-                                          "0.78rem",
-                                      }}
-                                    >
-                                      {isOutside
-                                        ? "Obecnie poza klasą"
-                                        : "Obecny w klasie"}
-                                    </span>
-                                  </div>
-
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      openTeacherExitModal(
-                                        student,
-                                      )
-                                    }
-                                    disabled={
-                                      isOutside
-                                    }
-                                    className="btn d-flex align-items-center gap-1 fw-semibold px-3 py-2"
-                                    style={{
-                                      backgroundColor:
-                                        isOutside
-                                          ? "#e5e7eb"
-                                          : "#8b5cf6",
-                                      color:
-                                        isOutside
-                                          ? "#6b7280"
-                                          : "#ffffff",
-                                      borderRadius:
-                                        "12px",
-                                      fontSize:
-                                        "0.8rem",
-                                    }}
-                                  >
-                                    <BsPlusLg
-                                      size={14}
-                                    />{" "}
-                                    Wyjście
-                                  </button>
+                                  {student.name
+                                    .split(" ")
+                                    .map((part) => part[0])
+                                    .slice(0, 2)
+                                    .join("")}
                                 </div>
-                              );
-                            },
-                          )
+
+                                <div className="flex-grow-1 min-w-0">
+                                  <span
+                                    className="fw-semibold d-block"
+                                    style={{
+                                      color: "#111827",
+                                    }}
+                                  >
+                                    {student.name}
+                                  </span>
+
+                                  <span
+                                    className="text-muted"
+                                    style={{
+                                      fontSize: "0.78rem",
+                                    }}
+                                  >
+                                    {isOutside ? "Obecnie poza klasą" : "Obecny w klasie"}
+                                  </span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => openTeacherExitModal(student)}
+                                  disabled={isOutside}
+                                  className="btn d-flex align-items-center gap-1 fw-semibold px-3 py-2"
+                                  style={{
+                                    backgroundColor: isOutside ? "#e5e7eb" : "#8b5cf6",
+                                    color: isOutside ? "#6b7280" : "#ffffff",
+                                    borderRadius: "12px",
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  <BsPlusLg size={14} /> Wyjście
+                                </button>
+                              </div>
+                            );
+                          })
                         ) : (
                           <div
                             className="d-flex align-items-center justify-content-center p-5 text-muted bg-white"
                             style={{
-                              borderRadius:
-                                "18px",
-                              border:
-                                "1px solid #eae7e0",
+                              borderRadius: "18px",
+                              border: "1px solid #eae7e0",
                             }}
                           >
-                            {selectedTeacherStudents.length ===
-                            0
+                            {selectedTeacherStudents.length === 0
                               ? "Nie ma jeszcze uczniów przypisanych do tej klasy."
                               : "Nie znaleziono ucznia o takiej nazwie."}
                           </div>
@@ -1634,11 +1298,9 @@ const Dashboard = () => {
                       style={{
                         minHeight: 0,
                         overflow: "hidden",
-                        backgroundColor:
-                          "#f8f7f2",
+                        backgroundColor: "#f8f7f2",
                         borderRadius: "28px",
-                        border:
-                          "1px solid #eae7e0",
+                        border: "1px solid #eae7e0",
                       }}
                     >
                       <div className="d-flex align-items-center gap-2 mb-3 flex-shrink-0">
@@ -1647,11 +1309,9 @@ const Dashboard = () => {
                           style={{
                             width: "38px",
                             height: "38px",
-                            backgroundColor:
-                              "#fef3c7",
+                            backgroundColor: "#fef3c7",
                             color: "#b45309",
-                            borderRadius:
-                              "14px",
+                            borderRadius: "14px",
                           }}
                         >
                           <BsDoorOpen size={18} />
@@ -1662,8 +1322,7 @@ const Dashboard = () => {
                             className="fw-bold mb-0"
                             style={{
                               color: "#111827",
-                              fontSize:
-                                "1.1rem",
+                              fontSize: "1.1rem",
                             }}
                           >
                             Aktywne wyjścia
@@ -1672,8 +1331,7 @@ const Dashboard = () => {
                           <span
                             className="text-muted"
                             style={{
-                              fontSize:
-                                "0.78rem",
+                              fontSize: "0.78rem",
                             }}
                           >
                             Uczniowie poza klasą
@@ -1690,105 +1348,75 @@ const Dashboard = () => {
                           flex: "1 1 0%",
                         }}
                       >
-                        {selectedClassActiveExits.length >
-                        0 ? (
-                          selectedClassActiveExits.map(
-                            (exit) => (
-                              <div
-                                key={exit.id}
-                                className="p-3 bg-white"
+                        {selectedClassActiveExits.length > 0 ? (
+                          selectedClassActiveExits.map((exit) => (
+                            <div
+                              key={exit.id}
+                              className="p-3 bg-white"
+                              style={{
+                                borderRadius: "18px",
+                                border: "1px solid #fde68a",
+                              }}
+                            >
+                              <span
+                                className="fw-bold d-block mb-1"
                                 style={{
-                                  borderRadius:
-                                    "18px",
-                                  border:
-                                    "1px solid #fde68a",
+                                  color: "#111827",
                                 }}
                               >
-                                <span
-                                  className="fw-bold d-block mb-1"
+                                {exit.studentName}
+                              </span>
+
+                              <span
+                                className="badge rounded-pill px-2 py-1 mb-3"
+                                style={{
+                                  backgroundColor: "#fef3c7",
+                                  color: "#b45309",
+                                  fontSize: "0.72rem",
+                                }}
+                              >
+                                {exit.reason}
+                              </span>
+
+                              <div
+                                className="d-flex align-items-center gap-1 text-muted mb-3"
+                                style={{
+                                  fontSize: "0.8rem",
+                                }}
+                              >
+                                <BsClockHistory size={13} />
+                                Wyjście trwa:{" "}
+                                <strong
                                   style={{
-                                    color:
-                                      "#111827",
+                                    color: "#b45309",
                                   }}
                                 >
-                                  {
-                                    exit.studentName
-                                  }
-                                </span>
-
-                                <span
-                                  className="badge rounded-pill px-2 py-1 mb-3"
-                                  style={{
-                                    backgroundColor:
-                                      "#fef3c7",
-                                    color:
-                                      "#b45309",
-                                    fontSize:
-                                      "0.72rem",
-                                  }}
-                                >
-                                  {exit.reason}
-                                </span>
-
-                                <div
-                                  className="d-flex align-items-center gap-1 text-muted mb-3"
-                                  style={{
-                                    fontSize:
-                                      "0.8rem",
-                                  }}
-                                >
-                                  <BsClockHistory
-                                    size={13}
-                                  />
-
-                                  Wyjście trwa:{" "}
-
-                                  <strong
-                                    style={{
-                                      color:
-                                        "#b45309",
-                                    }}
-                                  >
-                                    {formatExitDuration(
-                                      exit.startedAt,
-                                    )}
-                                  </strong>
-                                </div>
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    finishTeacherExit(
-                                      exit,
-                                    )
-                                  }
-                                  className="btn w-100 fw-semibold py-2"
-                                  style={{
-                                    backgroundColor:
-                                      "#10b981",
-                                    color:
-                                      "#ffffff",
-                                    borderRadius:
-                                      "12px",
-                                    fontSize:
-                                      "0.8rem",
-                                  }}
-                                >
-                                  Zakończ wyjście
-                                </button>
+                                  {formatExitDuration(exit.startedAt)}
+                                </strong>
                               </div>
-                            ),
-                          )
+
+                              <button
+                                type="button"
+                                onClick={() => finishTeacherExit(exit)}
+                                className="btn w-100 fw-semibold py-2"
+                                style={{
+                                  backgroundColor: "#10b981",
+                                  color: "#ffffff",
+                                  borderRadius: "12px",
+                                  fontSize: "0.8rem",
+                                }}
+                              >
+                                Zakończ wyjście
+                              </button>
+                            </div>
+                          ))
                         ) : (
                           <div
                             className="text-center text-muted p-4 bg-white"
                             style={{
-                              borderRadius:
-                                "18px",
-                              border:
-                                "1px solid #eae7e0",
-                              fontSize:
-                                "0.85rem",
+                              borderRadius: "18px",
+                              border: "1px solid #eae7e0",
+                              fontSize: "0.85rem",
                             }}
                           >
                             Brak aktywnych wyjść.
@@ -1816,108 +1444,72 @@ const Dashboard = () => {
                     Moje klasy
                   </h2>
 
-                  <p className="text-muted mb-0">
-                    Wybierz klasę, z którą chcesz
-                    pracować.
-                  </p>
+                  <p className="text-muted mb-0">Wybierz klasę, z którą chcesz pracować.</p>
                 </div>
 
                 {teacherClasses.length > 0 ? (
                   <div className="row g-3">
-                    {teacherClasses.map(
-                      (schoolClass) => (
-                        <div
-                          className="col-12 col-sm-6 col-lg-4"
-                          key={
-                            schoolClass.id
-                          }
+                    {teacherClasses.map((schoolClass) => (
+                      <div className="col-12 col-sm-6 col-lg-4" key={schoolClass.id}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTeacherClass(schoolClass)}
+                          className="card border-0 w-100 h-100 text-start p-4 shadow-sm"
+                          style={{
+                            backgroundColor: "#f8f7f2",
+                            border: "1px solid #eae7e0",
+                            borderRadius: "24px",
+                            cursor: "pointer",
+                          }}
                         >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedTeacherClass(
-                                schoolClass,
-                              )
-                            }
-                            className="card border-0 w-100 h-100 text-start p-4 shadow-sm"
-                            style={{
-                              backgroundColor:
-                                "#f8f7f2",
-                              border:
-                                "1px solid #eae7e0",
-                              borderRadius:
-                                "24px",
-                              cursor:
-                                "pointer",
-                            }}
-                          >
-                            <div className="d-flex align-items-center justify-content-between">
-                              <div>
-                                <span
-                                  className="text-uppercase fw-bold text-muted d-block mb-2"
-                                  style={{
-                                    fontSize:
-                                      "0.7rem",
-                                    letterSpacing:
-                                      "0.5px",
-                                  }}
-                                >
-                                  Klasa
-                                </span>
-
-                                <h3
-                                  className="fw-bold mb-0"
-                                  style={{
-                                    color:
-                                      "#111827",
-                                  }}
-                                >
-                                  {
-                                    schoolClass.name
-                                  }
-                                </h3>
-                              </div>
-
-                              <div
-                                className="d-flex align-items-center justify-content-center rounded-circle"
+                          <div className="d-flex align-items-center justify-content-between">
+                            <div>
+                              <span
+                                className="text-uppercase fw-bold text-muted d-block mb-2"
                                 style={{
-                                  width:
-                                    "46px",
-                                  height:
-                                    "46px",
-                                  backgroundColor:
-                                    "#8b5cf6",
-                                  color:
-                                    "#ffffff",
+                                  fontSize: "0.7rem",
+                                  letterSpacing: "0.5px",
                                 }}
                               >
-                                <BsPeopleFill
-                                  size={20}
-                                />
-                              </div>
+                                Klasa
+                              </span>
+
+                              <h3
+                                className="fw-bold mb-0"
+                                style={{
+                                  color: "#111827",
+                                }}
+                              >
+                                {schoolClass.name}
+                              </h3>
                             </div>
-                          </button>
-                        </div>
-                      ),
-                    )}
+
+                            <div
+                              className="d-flex align-items-center justify-content-center rounded-circle"
+                              style={{
+                                width: "46px",
+                                height: "46px",
+                                backgroundColor: "#8b5cf6",
+                                color: "#ffffff",
+                              }}
+                            >
+                              <BsPeopleFill size={20} />
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div
                     className="card border-0 p-4 text-center"
                     style={{
-                      backgroundColor:
-                        "#f8f7f2",
-                      borderRadius:
-                        "24px",
-                      border:
-                        "1px solid #eae7e0",
+                      backgroundColor: "#f8f7f2",
+                      borderRadius: "24px",
+                      border: "1px solid #eae7e0",
                     }}
                   >
-                    <p className="text-muted mb-0">
-                      Nie przypisano jeszcze
-                      żadnych klas do tego
-                      nauczyciela.
-                    </p>
+                    <p className="text-muted mb-0">Nie przypisano jeszcze żadnych klas do tego nauczyciela.</p>
                   </div>
                 )}
               </section>
@@ -1938,26 +1530,18 @@ const Dashboard = () => {
             overflow: "hidden",
           }}
         >
-          <div
-            className="row g-4 h-100"
-            style={{ minHeight: 0 }}
-          >
+          <div className="row g-4 h-100" style={{ minHeight: 0 }}>
             {/* LEWY PANEL */}
 
-            <div
-              className="col-12 col-xl-3 col-lg-4"
-              style={{ minHeight: 0 }}
-            >
+            <div className="col-12 col-xl-3 col-lg-4" style={{ minHeight: 0 }}>
               <div
                 className="card border-0 p-4 h-100 d-flex flex-column"
                 style={{
                   position: "relative",
                   overflow: "hidden",
-                  backgroundColor:
-                    "#f8f7f2",
+                  backgroundColor: "#f8f7f2",
                   borderRadius: "28px",
-                  border:
-                    "1px solid #eae7e0",
+                  border: "1px solid #eae7e0",
                 }}
               >
                 <div
@@ -1982,22 +1566,18 @@ const Dashboard = () => {
                       fontSize: "0.8rem",
                     }}
                   >
-                    Wybierz klasę, aby przejrzeć
-                    listę i logi wyjść.
+                    Wybierz klasę, aby przejrzeć listę i logi wyjść.
                   </p>
 
                   <button
                     className="btn w-100 d-flex justify-content-between align-items-center mb-3 px-3 py-2 bg-white"
                     style={{
-                      border:
-                        "1px solid #e5e2d9",
+                      border: "1px solid #e5e2d9",
                       borderRadius: "16px",
                       fontSize: "0.85rem",
                     }}
                   >
-                    <span>
-                      Wszystkie klasy
-                    </span>
+                    <span>Wszystkie klasy</span>
 
                     <BsChevronDown size={12} />
                   </button>
@@ -2005,80 +1585,52 @@ const Dashboard = () => {
                   <div
                     className="d-flex flex-column gap-2 pe-1"
                     style={{
-                      height:
-                        "calc(100vh - 420px)",
+                      height: "calc(100vh - 420px)",
                       minHeight: "180px",
-                      maxHeight:
-                        "calc(100vh - 320px)",
+                      maxHeight: "calc(100vh - 320px)",
                       overflowY: "auto",
                       flex: "0 0 auto",
                     }}
                   >
                     {classList.map((cls) => {
-                      const isActive =
-                        selectedClass ===
-                        cls.id;
+                      const isActive = selectedClass === cls.id;
 
                       return (
                         <div
                           key={cls.id}
-                          onClick={() =>
-                            setSelectedClass(
-                              cls.id,
-                            )
-                          }
+                          onClick={() => setSelectedClass(cls.id)}
                           className="p-3"
                           style={{
-                            cursor:
-                              "pointer",
-                            backgroundColor:
-                              isActive
-                                ? "#ffffff"
-                                : "#f0eee6",
-                            border: isActive
-                              ? "2px solid #8b5cf6"
-                              : "1px solid #e5e2d9",
-                            borderRadius:
-                              "18px",
-                            boxShadow:
-                              isActive
-                                ? "0 4px 12px rgba(139, 92, 246, 0.08)"
-                                : "none",
+                            cursor: "pointer",
+                            backgroundColor: isActive ? "#ffffff" : "#f0eee6",
+                            border: isActive ? "2px solid #8b5cf6" : "1px solid #e5e2d9",
+                            borderRadius: "18px",
+                            boxShadow: isActive ? "0 4px 12px rgba(139, 92, 246, 0.08)" : "none",
                           }}
                         >
                           <div className="d-flex justify-content-between align-items-center mb-1">
                             <h5
                               className="fw-bold mb-0"
                               style={{
-                                color:
-                                  "#111827",
-                                fontSize:
-                                  "1.05rem",
+                                color: "#111827",
+                                fontSize: "1.05rem",
                               }}
                             >
-                              Klasa{" "}
-                              {cls.name}
+                              Klasa {cls.name}
                             </h5>
 
                             {isActive && (
                               <div
                                 className="d-flex justify-content-center align-items-center"
                                 style={{
-                                  width:
-                                    "28px",
-                                  height:
-                                    "28px",
-                                  backgroundColor:
-                                    "#f3e8ff",
-                                  color:
-                                    "#8b5cf6",
-                                  borderRadius:
-                                    "10px",
+                                  width: "28px",
+                                  height: "28px",
+                                  backgroundColor: "#f3e8ff",
+                                  color: "#8b5cf6",
+                                  borderRadius: "10px",
                                 }}
                               >
-                                <BsPeopleFill
-                                  size={13}
-                                />
+                                <BsPeopleFill size={13} />
                               </div>
                             )}
                           </div>
@@ -2086,30 +1638,19 @@ const Dashboard = () => {
                           <div
                             className="fw-semibold text-dark mb-1"
                             style={{
-                              fontSize:
-                                "0.82rem",
+                              fontSize: "0.82rem",
                             }}
                           >
-                            {
-                              cls.studentsCount
-                            }{" "}
-                            uczniów
+                            {cls.studentsCount} uczniów
                           </div>
 
                           <div
                             className="text-muted"
                             style={{
-                              fontSize:
-                                "0.75rem",
+                              fontSize: "0.75rem",
                             }}
                           >
-                            • Dzisiaj:{" "}
-                            <strong className="text-dark">
-                              {
-                                cls.exitsToday
-                              }{" "}
-                              wyjść
-                            </strong>
+                            • Dzisiaj: <strong className="text-dark">{cls.exitsToday} wyjść</strong>
                           </div>
                         </div>
                       );
@@ -2130,8 +1671,7 @@ const Dashboard = () => {
                   <button
                     className="btn w-100 fw-semibold text-white py-2"
                     style={{
-                      backgroundColor:
-                        "#8b5cf6",
+                      backgroundColor: "#8b5cf6",
                       borderRadius: "16px",
                       fontSize: "0.85rem",
                     }}
@@ -2155,11 +1695,9 @@ const Dashboard = () => {
               <div
                 className="card border-0 p-4 shadow-sm flex-shrink-0"
                 style={{
-                  backgroundColor:
-                    "#f8f7f2",
+                  backgroundColor: "#f8f7f2",
                   borderRadius: "28px",
-                  border:
-                    "1px solid #eae7e0",
+                  border: "1px solid #eae7e0",
                 }}
               >
                 <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-3">
@@ -2169,41 +1707,31 @@ const Dashboard = () => {
                         className="fw-bold mb-0"
                         style={{
                           color: "#111827",
-                          fontSize:
-                            "1.6rem",
+                          fontSize: "1.6rem",
                         }}
                       >
-                        Klasa{" "}
-                        {currentClassInfo?.name ||
-                          "-"}
+                        Klasa {currentClassInfo?.name || "-"}
                       </h3>
 
                       <span
                         className="badge px-2 py-1 rounded-pill"
                         style={{
-                          backgroundColor:
-                            "#e9d5ff",
-                          color:
-                            "#6b21a8",
-                          fontSize:
-                            "0.75rem",
+                          backgroundColor: "#e9d5ff",
+                          color: "#6b21a8",
+                          fontSize: "0.75rem",
                         }}
                       >
-                        Wychowawca:{" "}
-                        {currentClassInfo?.teacher ||
-                          "Brak"}
+                        Wychowawca: {currentClassInfo?.teacher || "Brak"}
                       </span>
                     </div>
 
                     <span
                       className="text-muted"
                       style={{
-                        fontSize:
-                          "0.82rem",
+                        fontSize: "0.82rem",
                       }}
                     >
-                      Podsumowanie bieżących
-                      statystyk i obecności.
+                      Podsumowanie bieżących statystyk i obecności.
                     </span>
                   </div>
 
@@ -2211,48 +1739,34 @@ const Dashboard = () => {
                     <button
                       className="btn bg-white fw-semibold px-3 py-2"
                       style={{
-                        border:
-                          "1px solid #e5e2d9",
-                        borderRadius:
-                          "14px",
-                        fontSize:
-                          "0.82rem",
+                        border: "1px solid #e5e2d9",
+                        borderRadius: "14px",
+                        fontSize: "0.82rem",
                       }}
                     >
-                      <BsDownload size={13} />{" "}
-                      Eksport
+                      <BsDownload size={13} /> Eksport
                     </button>
 
                     <button
                       className="btn text-white fw-semibold px-3 py-2"
                       style={{
-                        backgroundColor:
-                          "#8b5cf6",
-                        borderRadius:
-                          "14px",
-                        fontSize:
-                          "0.82rem",
+                        backgroundColor: "#8b5cf6",
+                        borderRadius: "14px",
+                        fontSize: "0.82rem",
                       }}
                     >
-                      <BsArrowRepeat
-                        size={14}
-                      />{" "}
-                      Synchronizuj
+                      <BsArrowRepeat size={14} /> Synchronizuj
                     </button>
 
                     <button
                       className="btn bg-white fw-semibold px-3 py-2"
                       style={{
-                        border:
-                          "1px solid #e5e2d9",
-                        borderRadius:
-                          "14px",
-                        fontSize:
-                          "0.82rem",
+                        border: "1px solid #e5e2d9",
+                        borderRadius: "14px",
+                        fontSize: "0.82rem",
                       }}
                     >
-                      <BsGear size={13} />{" "}
-                      Zarządzaj
+                      <BsGear size={13} /> Zarządzaj
                     </button>
                   </div>
                 </div>
@@ -2262,16 +1776,14 @@ const Dashboard = () => {
                     <div
                       className="bg-white p-3 d-flex align-items-center justify-content-between h-100"
                       style={{
-                        border:
-                          "1px solid #eae7e0",
+                        border: "1px solid #eae7e0",
                       }}
                     >
                       <div>
                         <span
                           className="text-uppercase fw-bold text-muted d-block mb-1"
                           style={{
-                            fontSize:
-                              "0.65rem",
+                            fontSize: "0.65rem",
                           }}
                         >
                           Uczniowie
@@ -2280,26 +1792,19 @@ const Dashboard = () => {
                         <h4
                           className="fw-bold mb-0"
                           style={{
-                            fontSize:
-                              "1.4rem",
+                            fontSize: "1.4rem",
                           }}
                         >
-                          {
-                            currentClassInfo?.studentsCount ||
-                            0
-                          }
+                          {currentClassInfo?.studentsCount || 0}
                         </h4>
                       </div>
 
                       <div
                         className="d-flex align-items-center justify-content-center"
                         style={{
-                          backgroundColor:
-                            "#f3e8ff",
-                          color:
-                            "#8b5cf6",
-                          borderRadius:
-                            "14px",
+                          backgroundColor: "#f3e8ff",
+                          color: "#8b5cf6",
+                          borderRadius: "14px",
                           width: "42px",
                           height: "42px",
                         }}
@@ -2313,16 +1818,14 @@ const Dashboard = () => {
                     <div
                       className="bg-white p-3 d-flex align-items-center justify-content-between h-100"
                       style={{
-                        border:
-                          "1px solid #eae7e0",
+                        border: "1px solid #eae7e0",
                       }}
                     >
                       <div>
                         <span
                           className="text-uppercase fw-bold text-muted d-block mb-1"
                           style={{
-                            fontSize:
-                              "0.65rem",
+                            fontSize: "0.65rem",
                           }}
                         >
                           Aktywne wyjścia
@@ -2331,29 +1834,19 @@ const Dashboard = () => {
                         <h4
                           className="fw-bold mb-0"
                           style={{
-                            fontSize:
-                              "1.4rem",
+                            fontSize: "1.4rem",
                           }}
                         >
-                          {
-                            currentStudents.filter(
-                              (s) =>
-                                s.status ===
-                                "Na zewnątrz",
-                            ).length
-                          }
+                          {currentStudents.filter((s) => s.status === "Na zewnątrz").length}
                         </h4>
                       </div>
 
                       <div
                         className="d-flex align-items-center justify-content-center"
                         style={{
-                          backgroundColor:
-                            "#fef3c7",
-                          color:
-                            "#d97706",
-                          borderRadius:
-                            "14px",
+                          backgroundColor: "#fef3c7",
+                          color: "#d97706",
+                          borderRadius: "14px",
                           width: "42px",
                           height: "42px",
                         }}
@@ -2367,16 +1860,14 @@ const Dashboard = () => {
                     <div
                       className="bg-white p-3 d-flex align-items-center justify-content-between h-100"
                       style={{
-                        border:
-                          "1px solid #eae7e0",
+                        border: "1px solid #eae7e0",
                       }}
                     >
                       <div>
                         <span
                           className="text-uppercase fw-bold text-muted d-block mb-1"
                           style={{
-                            fontSize:
-                              "0.65rem",
+                            fontSize: "0.65rem",
                           }}
                         >
                           Frekwencja
@@ -2385,32 +1876,24 @@ const Dashboard = () => {
                         <h4
                           className="fw-bold mb-0"
                           style={{
-                            fontSize:
-                              "1.4rem",
+                            fontSize: "1.4rem",
                           }}
                         >
-                          {
-                            attendancePercentage
-                          }
+                          {attendancePercentage}
                         </h4>
                       </div>
 
                       <div
                         className="d-flex align-items-center justify-content-center"
                         style={{
-                          backgroundColor:
-                            "#d1fae5",
-                          color:
-                            "#059669",
-                          borderRadius:
-                            "14px",
+                          backgroundColor: "#d1fae5",
+                          color: "#059669",
+                          borderRadius: "14px",
                           width: "42px",
                           height: "42px",
                         }}
                       >
-                        <BsCheckCircleFill
-                          size={18}
-                        />
+                        <BsCheckCircleFill size={18} />
                       </div>
                     </div>
                   </div>
@@ -2420,8 +1903,7 @@ const Dashboard = () => {
               <div
                 className="row g-4"
                 style={{
-                  height:
-                    "calc(100vh - 390px)",
+                  height: "calc(100vh - 390px)",
                   marginBottom: "24px",
                   flex: "0 0 auto",
                   minHeight: 0,
@@ -2440,12 +1922,9 @@ const Dashboard = () => {
                     style={{
                       minHeight: 0,
                       overflow: "hidden",
-                      backgroundColor:
-                        "#f8f7f2",
-                      borderRadius:
-                        "28px",
-                      border:
-                        "1px solid #eae7e0",
+                      backgroundColor: "#f8f7f2",
+                      borderRadius: "28px",
+                      border: "1px solid #eae7e0",
                     }}
                   >
                     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -2453,26 +1932,18 @@ const Dashboard = () => {
                         className="fw-bold mb-0"
                         style={{
                           color: "#111827",
-                          fontSize:
-                            "1.1rem",
+                          fontSize: "1.1rem",
                         }}
                       >
-                        Lista uczniów (
-                        {
-                          currentStudents.length
-                        }
-                        )
+                        Lista uczniów ({currentStudents.length})
                       </h5>
 
                       <button
                         className="btn bg-white fw-semibold px-3 py-1"
                         style={{
-                          fontSize:
-                            "0.78rem",
-                          borderRadius:
-                            "12px",
-                          border:
-                            "1px solid #e5e2d9",
+                          fontSize: "0.78rem",
+                          borderRadius: "12px",
+                          border: "1px solid #e5e2d9",
                         }}
                       >
                         Odśwież
@@ -2484,114 +1955,77 @@ const Dashboard = () => {
                       style={{
                         minHeight: 0,
                         height: 0,
-                        padding:
-                          "4px 8px 12px 4px",
-                        overflowY:
-                          "auto",
+                        padding: "4px 8px 12px 4px",
+                        overflowY: "auto",
                         flex: "1 1 0%",
                       }}
                     >
-                      {currentStudents.length >
-                      0 ? (
-                        currentStudents.map(
-                          (student) => (
-                            <div
-                              key={
-                                student.id
-                              }
-                              className="d-flex align-items-center justify-content-between p-3 bg-white"
-                              style={{
-                                borderRadius:
-                                  "16px",
-                                border:
-                                  "1px solid #eae7e0",
-                              }}
-                            >
-                              <div className="d-flex align-items-center gap-3">
-                                <div
-                                  className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                  style={{
-                                    width:
-                                      "36px",
-                                    height:
-                                      "36px",
-                                    backgroundColor:
-                                      student.avatarBg,
-                                    fontSize:
-                                      "0.8rem",
-                                  }}
-                                >
-                                  {student.name
-                                    .split(
-                                      " ",
-                                    )
-                                    .map(
-                                      (
-                                        n,
-                                      ) =>
-                                        n[0],
-                                    )
-                                    .join(
-                                      "",
-                                    )}
-                                </div>
-
-                                <div>
-                                  <span
-                                    className="fw-bold text-dark d-block"
-                                    style={{
-                                      fontSize:
-                                        "0.88rem",
-                                    }}
-                                  >
-                                    {
-                                      student.name
-                                    }
-                                  </span>
-
-                                  <span
-                                    className="text-muted"
-                                    style={{
-                                      fontSize:
-                                        "0.73rem",
-                                    }}
-                                  >
-                                    Ostatnie
-                                    wyjście:{" "}
-                                    {
-                                      student.lastExit
-                                    }
-                                  </span>
-                                </div>
+                      {currentStudents.length > 0 ? (
+                        currentStudents.map((student) => (
+                          <div
+                            key={student.id}
+                            className="d-flex align-items-center justify-content-between p-3 bg-white"
+                            style={{
+                              borderRadius: "16px",
+                              border: "1px solid #eae7e0",
+                            }}
+                          >
+                            <div className="d-flex align-items-center gap-3">
+                              <div
+                                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                style={{
+                                  width: "36px",
+                                  height: "36px",
+                                  backgroundColor: student.avatarBg,
+                                  fontSize: "0.8rem",
+                                }}
+                              >
+                                {student.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")}
                               </div>
 
-                              <div className="d-flex align-items-center gap-2">
-                                {renderStatusBadge(
-                                  student.status,
-                                )}
-
-                                <button
-                                  className="btn bg-light border-0 fw-semibold px-2 py-1"
+                              <div>
+                                <span
+                                  className="fw-bold text-dark d-block"
                                   style={{
-                                    fontSize:
-                                      "0.75rem",
-                                    borderRadius:
-                                      "10px",
-                                    color:
-                                      "#374151",
+                                    fontSize: "0.88rem",
                                   }}
                                 >
-                                  Logi
-                                </button>
+                                  {student.name}
+                                </span>
+
+                                <span
+                                  className="text-muted"
+                                  style={{
+                                    fontSize: "0.73rem",
+                                  }}
+                                >
+                                  Ostatnie wyjście: {student.lastExit}
+                                </span>
                               </div>
                             </div>
-                          ),
-                        )
+
+                            <div className="d-flex align-items-center gap-2">
+                              {renderStatusBadge(student.status)}
+
+                              <button
+                                className="btn bg-light border-0 fw-semibold px-2 py-1"
+                                style={{
+                                  fontSize: "0.75rem",
+                                  borderRadius: "10px",
+                                  color: "#374151",
+                                }}
+                              >
+                                Logi
+                              </button>
+                            </div>
+                          </div>
+                        ))
                       ) : (
                         <div className="d-flex align-items-center justify-content-center h-100 text-muted p-4 bg-white">
-                          Brak uczniów
-                          przypisanych do
-                          tej klasy.
+                          Brak uczniów przypisanych do tej klasy.
                         </div>
                       )}
                     </div>
@@ -2611,12 +2045,9 @@ const Dashboard = () => {
                     style={{
                       minHeight: 0,
                       overflow: "hidden",
-                      backgroundColor:
-                        "#f8f7f2",
-                      borderRadius:
-                        "28px",
-                      border:
-                        "1px solid #eae7e0",
+                      backgroundColor: "#f8f7f2",
+                      borderRadius: "28px",
+                      border: "1px solid #eae7e0",
                     }}
                   >
                     <div className="d-flex justify-content-between align-items-center mb-3">
@@ -2624,42 +2055,26 @@ const Dashboard = () => {
                         className="fw-bold mb-0"
                         style={{
                           color: "#111827",
-                          fontSize:
-                            "1.1rem",
+                          fontSize: "1.1rem",
                         }}
                       >
-                        Historia wyjść
-                        dzisiaj
+                        Historia wyjść dzisiaj
                       </h5>
 
                       <div className="position-relative">
-                        <BsSearch
-                          size={12}
-                          className="position-absolute top-50 start-0 translate-middle-y ms-2 text-muted"
-                        />
+                        <BsSearch size={12} className="position-absolute top-50 start-0 translate-middle-y ms-2 text-muted" />
 
                         <input
                           type="text"
                           placeholder="Szukaj..."
-                          value={
-                            searchQuery
-                          }
-                          onChange={(e) =>
-                            setSearchQuery(
-                              e.target
-                                .value,
-                            )
-                          }
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
                           className="form-control bg-white shadow-sm ps-4 py-1"
                           style={{
-                            borderRadius:
-                              "12px",
-                            fontSize:
-                              "0.78rem",
-                            width:
-                              "130px",
-                            border:
-                              "1px solid #e5e2d9",
+                            borderRadius: "12px",
+                            fontSize: "0.78rem",
+                            width: "130px",
+                            border: "1px solid #e5e2d9",
                           }}
                         />
                       </div>
@@ -2670,69 +2085,42 @@ const Dashboard = () => {
                       style={{
                         minHeight: 0,
                         height: 0,
-                        padding:
-                          "4px 8px 12px 4px",
-                        overflowY:
-                          "auto",
+                        padding: "4px 8px 12px 4px",
+                        overflowY: "auto",
                         flex: "1 1 0%",
                       }}
                     >
                       {currentHistory
                         .filter(
                           (log) =>
-                            !searchQuery ||
-                            log.studentName
-                              .toLocaleLowerCase(
-                                "pl-PL",
-                              )
-                              .includes(
-                                searchQuery.toLocaleLowerCase(
-                                  "pl-PL",
-                                ),
-                              ),
+                            !searchQuery || log.studentName.toLocaleLowerCase("pl-PL").includes(searchQuery.toLocaleLowerCase("pl-PL")),
                         )
                         .map((log) => (
                           <div
                             key={log.id}
                             className="d-flex align-items-center justify-content-between p-3 bg-white"
                             style={{
-                              borderRadius:
-                                "16px",
-                              border:
-                                "1px solid #eae7e0",
+                              borderRadius: "16px",
+                              border: "1px solid #eae7e0",
                             }}
                           >
                             <div>
                               <span
                                 className="fw-bold text-dark d-block"
                                 style={{
-                                  fontSize:
-                                    "0.88rem",
+                                  fontSize: "0.88rem",
                                 }}
                               >
-                                {
-                                  log.studentName
-                                }
+                                {log.studentName}
                               </span>
 
                               <span
                                 className="text-muted"
                                 style={{
-                                  fontSize:
-                                    "0.75rem",
+                                  fontSize: "0.75rem",
                                 }}
                               >
-                                Wyjście:{" "}
-                                <strong className="text-dark">
-                                  {
-                                    log.exitTime
-                                  }
-                                </strong>{" "}
-                                (
-                                {
-                                  log.duration
-                                }
-                                )
+                                Wyjście: <strong className="text-dark">{log.exitTime}</strong> ({log.duration})
                               </span>
                             </div>
 
@@ -2740,36 +2128,24 @@ const Dashboard = () => {
                               <span
                                 className="badge px-2 py-1"
                                 style={{
-                                  backgroundColor:
-                                    "#f3f4f6",
-                                  color:
-                                    "#374151",
-                                  borderRadius:
-                                    "10px",
-                                  fontSize:
-                                    "0.75rem",
-                                  fontWeight:
-                                    "500",
+                                  backgroundColor: "#f3f4f6",
+                                  color: "#374151",
+                                  borderRadius: "10px",
+                                  fontSize: "0.75rem",
+                                  fontWeight: "500",
                                 }}
                               >
-                                {
-                                  log.reason
-                                }
+                                {log.reason}
                               </span>
 
-                              {renderStatusBadge(
-                                log.status,
-                              )}
+                              {renderStatusBadge(log.status)}
                             </div>
                           </div>
                         ))}
 
-                      {currentHistory.length ===
-                        0 && (
+                      {currentHistory.length === 0 && (
                         <div className="d-flex align-items-center justify-content-center h-100 text-muted p-4 bg-white">
-                          Brak wyjść
-                          zarejestrowanych
-                          dla tej klasy.
+                          Brak wyjść zarejestrowanych dla tej klasy.
                         </div>
                       )}
                     </div>
@@ -2798,9 +2174,7 @@ const Dashboard = () => {
             fontSize: "0.78rem",
           }}
         >
-          Szkolny Węzeł © 2024.
-          Ogólnopolski system zarządzania
-          placówką.
+          Szkolny Węzeł © 2024. Ogólnopolski system zarządzania placówką.
         </p>
       </footer>
 
@@ -2813,12 +2187,9 @@ const Dashboard = () => {
           className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center p-3"
           style={{
             zIndex: 1100,
-            backgroundColor:
-              "rgba(17, 24, 39, 0.56)",
+            backgroundColor: "rgba(17, 24, 39, 0.56)",
           }}
-          onClick={() =>
-            closeTeacherExitModal()
-          }
+          onClick={() => closeTeacherExitModal()}
         >
           <div
             className="card border-0 shadow-lg w-100 p-4 p-md-5"
@@ -2828,12 +2199,9 @@ const Dashboard = () => {
             style={{
               maxWidth: "480px",
               borderRadius: "28px",
-              backgroundColor:
-                "#f8f7f2",
+              backgroundColor: "#f8f7f2",
             }}
-            onClick={(event) =>
-              event.stopPropagation()
-            }
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="d-flex align-items-start justify-content-between gap-3 mb-4">
               <div>
@@ -2841,8 +2209,7 @@ const Dashboard = () => {
                   className="text-uppercase fw-bold text-muted d-block mb-2"
                   style={{
                     fontSize: "0.7rem",
-                    letterSpacing:
-                      "0.5px",
+                    letterSpacing: "0.5px",
                   }}
                 >
                   Rejestracja wyjścia
@@ -2853,13 +2220,10 @@ const Dashboard = () => {
                   className="fw-bold mb-1"
                   style={{
                     color: "#111827",
-                    fontSize:
-                      "1.4rem",
+                    fontSize: "1.4rem",
                   }}
                 >
-                  {
-                    selectedStudentForExit.name
-                  }
+                  {selectedStudentForExit.name}
                 </h2>
 
                 <p
@@ -2868,19 +2232,14 @@ const Dashboard = () => {
                     fontSize: "0.88rem",
                   }}
                 >
-                  Wybierz powód wyjścia
-                  ucznia.
+                  Wybierz powód wyjścia ucznia.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() =>
-                  closeTeacherExitModal()
-                }
-                disabled={
-                  isSavingTeacherExit
-                }
+                onClick={() => closeTeacherExitModal()}
+                disabled={isSavingTeacherExit}
                 className="btn btn-light rounded-circle p-1"
                 aria-label="Zamknij okno"
                 style={{
@@ -2917,47 +2276,29 @@ const Dashboard = () => {
             <select
               id="exit-reason"
               value={exitReason}
-              onChange={(event) =>
-                setExitReason(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setExitReason(event.target.value)}
               className="form-select bg-white py-2 mb-4"
-              disabled={
-                isSavingTeacherExit
-              }
+              disabled={isSavingTeacherExit}
               style={{
-                border:
-                  "1px solid #e5e2d9",
+                border: "1px solid #e5e2d9",
                 borderRadius: "14px",
               }}
             >
-              <option value="">
-                Wybierz powód...
-              </option>
+              <option value="">Wybierz powód...</option>
 
-              <option value="Toaleta">
-                Wyjście do toalety
-              </option>
+              <option value="Toaleta">Wyjście do toalety</option>
 
-              <option value="Inny powód">
-                Wyjście z innego powodu
-              </option>
+              <option value="Inny powód">Wyjście z innego powodu</option>
             </select>
 
             <div className="d-flex gap-2 justify-content-end">
               <button
                 type="button"
-                onClick={() =>
-                  closeTeacherExitModal()
-                }
-                disabled={
-                  isSavingTeacherExit
-                }
+                onClick={() => closeTeacherExitModal()}
+                disabled={isSavingTeacherExit}
                 className="btn bg-white fw-semibold px-3 py-2"
                 style={{
-                  border:
-                    "1px solid #e5e2d9",
+                  border: "1px solid #e5e2d9",
                   borderRadius: "12px",
                 }}
               >
@@ -2967,21 +2308,15 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={saveTeacherExit}
-                disabled={
-                  !exitReason ||
-                  isSavingTeacherExit
-                }
+                disabled={!exitReason || isSavingTeacherExit}
                 className="btn fw-semibold px-4 py-2"
                 style={{
-                  backgroundColor:
-                    "#8b5cf6",
+                  backgroundColor: "#8b5cf6",
                   color: "#ffffff",
                   borderRadius: "12px",
                 }}
               >
-                {isSavingTeacherExit
-                  ? "Zapisywanie..."
-                  : "Zatwierdź wyjście"}
+                {isSavingTeacherExit ? "Zapisywanie..." : "Zatwierdź wyjście"}
               </button>
             </div>
           </div>
