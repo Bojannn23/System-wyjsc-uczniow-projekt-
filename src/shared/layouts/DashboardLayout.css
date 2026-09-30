@@ -1,0 +1,106 @@
+:root {
+  --app-accent: #8b5cf6;
+  --app-ink: #111827;
+  --app-surface: #f8f7f2;
+  --app-surface-muted: #f5f4f0;
+  --app-border: #eae7e0;
+  --app-border-subtle: #e5e2d9;
+  --app-warning: #b45309;
+  --app-warning-surface: #fef3c7;
+  --app-success: #047857;
+  --app-success-surface: #d1fae5;
+}
+
+.app-dashboard-header {
+  min-height: 64px;
+  overflow: hidden;
+}
+
+@media (min-width: 992px) and (min-height: 720px) {
+  .app-dashboard-shell--fit {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.app-dashboard-header-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.app-dashboard-header-brand,
+.app-dashboard-brand-copy {
+  min-width: 0;
+}
+
+.app-dashboard-brand-copy {
+  white-space: nowrap;
+}
+
+.app-dashboard-user-controls {
+  flex-shrink: 0;
+}
+
+.app-dashboard-account-label {
+  white-space: nowrap;
+}
+
+.app-dashboard-logout-icon {
+  display: none;
+}
+
+@media (max-width: 575.98px) {
+  .app-dashboard-header-inner {
+    gap: 0.4rem;
+  }
+
+  .app-dashboard-header-brand,
+  .app-dashboard-user-controls {
+    gap: 0.45rem !important;
+  }
+
+  .app-dashboard-brand-title {
+    font-size: 0.82rem !important;
+  }
+
+  .app-dashboard-section-label {
+    font-size: 0.52rem !important;
+  }
+
+  .app-dashboard-account {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .app-dashboard-account-label,
+  .app-dashboard-logout-label {
+    display: none;
+  }
+
+  .app-dashboard-logout {
+    display: inline-flex;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 !important;
+  }
+
+  .app-dashboard-logout-icon {
+    display: block;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 350px) {
+  .app-dashboard-section-label {
+    display: none;
+  }
+}

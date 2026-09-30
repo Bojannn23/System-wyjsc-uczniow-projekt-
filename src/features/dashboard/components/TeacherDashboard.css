@@ -1,0 +1,84 @@
+.teacher-dashboard-main {
+  flex: 1 0 auto;
+  background-color: #ffffff;
+}
+
+.teacher-dashboard-content {
+  min-height: 0;
+}
+
+.teacher-student-list,
+.teacher-exit-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 55vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: auto;
+}
+
+.teacher-student-list > *,
+.teacher-exit-list > * {
+  flex: 0 0 auto;
+}
+
+.teacher-class-panels {
+  align-items: stretch;
+}
+
+.teacher-class-panel {
+  min-height: 380px;
+}
+
+@media (max-width: 991.98px) {
+  .teacher-class-panel {
+    min-height: 340px;
+  }
+}
+
+@media (min-width: 992px) and (min-height: 720px) {
+  .app-dashboard-shell--fit .teacher-dashboard-main {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-dashboard-shell--fit .teacher-dashboard-content {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-dashboard-shell--fit .teacher-selected-class {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .app-dashboard-shell--fit .teacher-class-panels {
+    height: auto;
+    min-height: 0;
+    flex: 0 1 auto;
+    overflow: visible;
+  }
+
+  .app-dashboard-shell--fit .teacher-class-panel {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .app-dashboard-shell--fit .teacher-class-card {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .app-dashboard-shell--fit .teacher-student-list,
+  .app-dashboard-shell--fit .teacher-exit-list {
+    height: auto;
+    max-height: min(40vh, 400px);
+    flex: 0 1 auto;
+  }
+}
