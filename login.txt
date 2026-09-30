@@ -1,2 +1,6 @@
 Pedagog: robert.nowicki@szkola.pl h: robert123
-Nauczyciel: test@szkola.pl haslo: test123
+Pedagog: katarzyna.szymanska@szkola.pl h: katarzyna123
+
+Nauczyciel: test@szkola.pl h: test123
+
+Dyrektor: dyrektor@szkola.pl h: dyrektor123

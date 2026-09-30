@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { FaGraduationCap } from "react-icons/fa";
-import { BsBarChartLine, BsBoxArrowRight, BsGrid1X2, BsList, BsX } from "react-icons/bs";
+import { BsBarChartLine, BsBoxArrowRight, BsGrid1X2, BsList, BsX, BsGear } from "react-icons/bs";
 import "./DashboardLayout.css";
 
 const DashboardLayout = ({ children, staffMember, onLogout, sectionLabel = "PANEL SZKOLNY", fitViewport = false }) => {
@@ -74,6 +74,13 @@ const DashboardLayout = ({ children, staffMember, onLogout, sectionLabel = "PANE
                   <BsBarChartLine size={16} /> Raport klasy
                 </NavLink>
               </li>
+              {staffMember?.roles?.name === "dyrektor" && (
+                <li className="nav-item">
+                  <NavLink to="/zarzadzanie" className={navLinkClass} style={navLinkStyle} onClick={() => setIsSidebarOpen(false)}>
+                    <BsGear size={16} /> Zarządzanie szkołą
+                  </NavLink>
+                </li>
+              )}
             </ul>
           </nav>
         </div>
