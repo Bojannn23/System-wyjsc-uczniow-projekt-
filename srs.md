@@ -13,13 +13,18 @@ Zakres: MVP
 Celem systemu jest umożliwienie nauczycielowi szybkiego rejestrowania wyjść uczniów z sali podczas trwania lekcji, np. w celu skorzystania z toalety.
 System ma zastąpić tradycyjne zapisywanie takich informacji na kartce lub w zeszycie.
 Główne zadania systemu:
+
     • rejestrowanie wyjścia ucznia,
+   
     • rejestrowanie powrotu ucznia,
+   
     • przechowywanie informacji o wyjściach,
+   
     • umożliwienie nauczycielowi sprawdzenia, kto aktualnie znajduje się poza salą.
+   
     • Wgląd go historii i pobranie raportu.
 
-2. Zakres 
+3. Zakres 
 W pierwszej wersji system powinien umożliwiać:
     1. Logowanie nauczyciela.
     2. Wybór klasy.
@@ -34,39 +39,60 @@ W pierwszej wersji system powinien umożliwiać:
     11. Pobranie raportu wyjść uczniów.
 
 
-3. Użytkownicy systemu
+4. Użytkownicy systemu
 Występują trzy podstawowe typy użytkowników.
 Nauczyciel
 Nauczyciel może:
+
     • zalogować się do systemu,
+   
     • wybrać klasę z jaką aktualnie ma lekcje,
+   
     • zobaczyć listę uczniów,
+   
     • zarejestrować wyjście ucznia,
+   
     • zarejestrować powrót ucznia,
+   
     • Jeśli jest wychowawcą klasy, może zobaczyć historię wyjść czy pobrać raport.
+   
 Dyrektor(Administrator)
 Dyrektor może:
+
     • zalogować się do systemu
+    
     • oglądać dane – wyjścia uczniów
+    
     • pobrać raport wszystkich klas
+    
     • pobrać raport szczegółowy np. 1 osoby czy klasy
+    
     • edytować dane uczniów,
+    
     • dodawać konta nauczycieli,
+    
     • zarządzać klasami.
 
 Pedagog może:
 
     • zalogować się do systemu
+    
     • oglądać dane – wyjścia uczniów
+    
     • pobrać raport wszystkich klas
+    
     • pobrać raport szczegółowy np. 1 osoby czy klasy
+    
 
 4. Wymagania funkcjonalne
 WF-01 — Logowanie
 System musi umożliwiać nauczycielowi zalogowanie się przy użyciu loginu i hasła.
 Dane wejściowe:
+
     • login,
+   
     • hasło.
+   
 
 <img width="692" height="721" alt="image" src="https://github.com/user-attachments/assets/cbb5223a-1bf2-4519-ae3d-e3bb3673db07" />
 
@@ -84,10 +110,15 @@ Przykład:
 WF-03 — Rejestracja wyjścia
 Nauczyciel może nacisnąć przycisk „Wyjście” przy wybranym uczniu.
 System zapisuje:
+
     • identyfikator ucznia,
+    
     • datę,
+    
     • godzinę wyjścia,
+    
     • rodzaj wyjścia,
+    
 Przykład:
 
 <img width="612" height="391" alt="image" src="https://github.com/user-attachments/assets/fc7b4d33-5640-4fac-81c8-2405335cd2f7" />
@@ -106,8 +137,11 @@ System zapisuje godzinę powrotu.
 
 WF-05 — Aktualny status ucznia
 System musi informować, czy uczeń znajduje się:
+
     • w sali,
+    
     • poza salą.
+    
 Uczeń, który ma aktywne wyjście, powinien być oznaczony jako „Poza salą”.
 
 
@@ -124,17 +158,29 @@ Przykład:
 
 WF-07 — Generowanie raportu
 System musi umożliwiać uprawnionemu użytkownikowi wygenerowanie raportu wyjść uczniów. Raport powinien umożliwiać filtrowanie danych według:
-- ucznia, 
-- klasy, 
-- zakresu dat, 
-- rodzaju wyjścia. 
+
+- ucznia,
+
+- klasy,
+  
+- zakresu dat,
+  
+- rodzaju wyjścia.
+  
 Raport powinien zawierać co najmniej:
-- imię i nazwisko ucznia, 
-- klasę, 
-- datę, 
-- godzinę wyjścia, 
-- godzinę powrotu, 
-- rodzaj wyjścia. 
+
+- imię i nazwisko ucznia,
+  
+- klasę,
+  
+- datę,
+  
+- godzinę wyjścia,
+  
+- godzinę powrotu,
+  
+- rodzaj wyjścia.
+  
 
 
 
@@ -203,26 +249,45 @@ Historia wyjść:
 
 10. Reguły biznesowe
 System powinien przestrzegać kilku podstawowych zasad:
+
     • Jeden uczeń może mieć maksymalnie jedno aktywne wyjście.
+    
     • Nie można zarejestrować powrotu ucznia, który nie ma aktywnego wyjścia.
+    
     • Godzina wyjścia jest ustalana automatycznie przez system.
+    
     • Godzina powrotu jest ustalana automatycznie przez system.
+    
     • Wyjście bez powrotu pozostaje oznaczone jako aktywne.
+    
     • Tylko zalogowany nauczyciel może rejestrować wyjścia.
+    
     • Tylko wychowawca(jeżeli jest zalogowany jako nauczyciel) ma wgląd do historii.
 
 
-11. Kryteria akceptacji 
+12. Kryteria akceptacji 
 System można uznać za spełniający wymagania, jeżeli nauczyciel(wychowawca) może:
+
     • zalogować się,
+    
     • wybrać klasę
+    
     • zobaczyć uczniów,
+    
     • wybrać ucznia,
+    
     • zarejestrować wyjście,
+    
     • zobaczyć godzinę wyjścia,
+    
     • zarejestrować powrót,
+    
     • zobaczyć godzinę powrotu,
+    
     • sprawdzić, kto aktualnie jest poza salą,
+    
     • wyświetlić historię wyjść.
+    
 Najprostszy przepływ całego systemu
+
      Logowanie → Wybór klasy → Rejestracja wyjścia → Wgląd do historii wyjść → pobranie raportu.
