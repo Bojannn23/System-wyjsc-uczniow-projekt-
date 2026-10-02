@@ -1,0 +1,7 @@
+Pedagog: robert.nowicki@szkola.pl h: robert123
+Pedagog: katarzyna.szymanska@szkola.pl h: katarzyna123
+
+Nauczyciel: test@szkola.pl h: test123
+Nauczyciel: jan.nowak@szkola.pl h: jannowak123
+
+Dyrektor: dyrektor@szkola.pl h: dyrektor123

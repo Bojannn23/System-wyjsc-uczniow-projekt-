@@ -1,0 +1,40 @@
+.director-management {
+  flex: 1 0 auto;
+  min-width: 0;
+}
+
+.director-management .btn-primary {
+  background-color: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.director-management .btn-primary:hover,
+.director-management .btn-primary:focus-visible {
+  background-color: #7444df;
+  border-color: #7444df;
+}
+
+.director-management .nav-link {
+  color: #475569;
+}
+
+.director-management .nav-link.active {
+  color: #6d3fdb;
+  font-weight: 600;
+}
+
+.director-management-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(17 24 39 / 35%);
+}
+
+.director-management-dialog {
+  width: min(100%, 520px);
+  max-height: min(90vh, 760px);
+  overflow-y: auto;
+}
