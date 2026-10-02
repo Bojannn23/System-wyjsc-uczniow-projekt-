@@ -1,8 +1,13 @@
 SRS — System Rejestru Wyjść Uczniów
+
 Autorzy: Nikodem Waśniowski, Oskar Bojanowski
+
 Wersja: 1.0
+
 Typ dokumentu: Software Requirements Specification (SRS)
+
 Zakres: MVP
+
 
 1. Cel systemu
 Celem systemu jest umożliwienie nauczycielowi szybkiego rejestrowania wyjść uczniów z sali podczas trwania lekcji, np. w celu skorzystania z toalety.
