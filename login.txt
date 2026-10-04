@@ -3,5 +3,6 @@ Pedagog: katarzyna.szymanska@szkola.pl h: katarzyna123
 
 Nauczyciel: test@szkola.pl h: test123
 Nauczyciel: jan.nowak@szkola.pl h: jannowak123
+Nauczyciel: ewa.zielinska@szkola.pl h: zielinska123
 
 Dyrektor: dyrektor@szkola.pl h: dyrektor123
